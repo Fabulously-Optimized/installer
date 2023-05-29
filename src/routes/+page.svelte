@@ -44,9 +44,9 @@
         const mc_version = version?.game_versions[0] ?? "";
 		download_and_install_mrpack(
 			url ?? "",
-            `fabulously-optimized-${mc_version}`,
+            isolateProfile ? `fabulously-optimized-${mc_version}` : 'fabulously-optimized',
             await (await fetch((await get_project(PROJECT_ID)).icon_url ?? "")).blob(),
-            `Fabulously Optimized ${mc_version}`,
+            isolateProfile ? `Fabulously Optimized ${mc_version}` : "Fabulously Optimized",
             isolateProfile ? `FO-${mc_version}` : undefined
 		).then(() => {
             state = 'postInstall';
