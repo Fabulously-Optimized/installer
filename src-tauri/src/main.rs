@@ -27,6 +27,9 @@ fn main() {
 mod mrpack;
 
 fn get_launcher_path() -> PathBuf {
+    if let Ok(path) = std::env::var("PAIGALDAJA_LAUNCHER_PATH") {
+        return PathBuf::from(path);
+    }
     #[cfg(target_os = "windows")]
     {
         let mut path = PathBuf::from(std::env::var("APPDATA").unwrap());
