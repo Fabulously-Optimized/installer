@@ -111,22 +111,38 @@ fn set_or_create_profile(
     profile_name: &str,
     profile_icon: &str,
     profile_version: &str,
+    profile_dir: Option<&str>,
 ) -> Option<()> {
     let profiles = json.as_object_mut()?.get_mut("profiles")?.as_object_mut()?;
     let now = time::OffsetDateTime::now_utc()
         .format(&time::format_description::well_known::Iso8601::DEFAULT)
         .ok()?;
-    profiles.insert(
-        profile_id.to_string(),
-        serde_json::json!({
-            "name": profile_name,
-            "type": "custom",
-            "created": now,
-            "lastUsed": now,
-            "icon": profile_icon,
-            "lastVersionId": profile_version
-        }),
-    );
+    if let Some(profile_dir) = profile_dir {
+        profiles.insert(
+            profile_id.to_string(),
+            serde_json::json!({
+                "name": profile_name,
+                "type": "custom",
+                "created": now,
+                "lastUsed": now,
+                "icon": profile_icon,
+                "lastVersionId": profile_version,
+                "gameDir": profile_dir
+            }),
+        );
+    } else {
+        profiles.insert(
+            profile_id.to_string(),
+            serde_json::json!({
+                "name": profile_name,
+                "type": "custom",
+                "created": now,
+                "lastUsed": now,
+                "icon": profile_icon,
+                "lastVersionId": profile_version
+            }),
+        );
+    }
     Some(())
 }
 
@@ -137,8 +153,13 @@ async fn download_and_install_mrpack(
     pack_id: String,
     icon: String,
     pack_name: String,
+    profile_dir: Option<String>,
 ) -> Result<(), String> {
-    let _ = app_handle.emit_all("install:progress", ("load_pack:start",));
+    let _ = app_handle.emit_all("install:progress", ("load_pack", "start"));
+    let profile_base_path = match profile_dir.clone() {
+        Some(path) => get_launcher_path().join(PathBuf::from(path)),
+        None => get_launcher_path(),
+    };
     let client = ClientBuilder::new().build().unwrap();
     let request = HttpRequestBuilder::new("GET", url)
         .map_err(|e| e.to_string())?
@@ -161,13 +182,13 @@ async fn download_and_install_mrpack(
     if index.game != "minecraft" {
         return Err(format!("Unknown game {}", index.game));
     }
-    let _ = app_handle.emit_all("install:progress", ("load_pack:complete",));
+    let _ = app_handle.emit_all("install:progress", ("load_pack", "complete"));
     let _ = app_handle.emit_all(
         "install:progress",
-        ("download_files:start", index.files.len()),
+        ("download_files", "start", index.files.len()),
     );
     for (i, file) in index.files.into_iter().enumerate() {
-        let _ = app_handle.emit_all("install:progress", ("download_file:start", i));
+        let _ = app_handle.emit_all("install:progress", ("download_file", "start", i));
         if let Some(env) = file.env {
             if let Some(&mrpack::SideType::Unsupported) = env.get(&mrpack::EnvType::Client) {
                 continue;
@@ -199,13 +220,16 @@ async fn download_and_install_mrpack(
                             == hash
                         {
                             if let Some(parent) = PathBuf::from(file.path.clone()).parent() {
-                                tokio::fs::create_dir_all(get_launcher_path().join(parent))
+                                tokio::fs::create_dir_all(profile_base_path.join(parent))
                                     .await
                                     .map_err(|e| e.to_string())?;
                             }
-                            tokio::fs::write(get_launcher_path().join(PathBuf::from(file.path.clone())), blob.data)
-                                .await
-                                .map_err(|e| e.to_string())?;
+                            tokio::fs::write(
+                                profile_base_path.join(PathBuf::from(file.path.clone())),
+                                blob.data,
+                            )
+                            .await
+                            .map_err(|e| e.to_string())?;
                             success = true;
                             break;
                         }
@@ -216,10 +240,10 @@ async fn download_and_install_mrpack(
         if !success {
             return Err(format!("Download failed for {}", file.path));
         }
-        let _ = app_handle.emit_all("install:progress", ("download_file:complete", i));
+        let _ = app_handle.emit_all("install:progress", ("download_file", "complete", i));
     }
-    let _ = app_handle.emit_all("install:progress", ("download_files:complete",));
-    let _ = app_handle.emit_all("install:progress", ("extract_overrides:start",));
+    let _ = app_handle.emit_all("install:progress", ("download_files", "complete"));
+    let _ = app_handle.emit_all("install:progress", ("extract_overrides", "start"));
     for filename in mrpack
         .file_names()
         .map(|e| e.to_string())
@@ -245,16 +269,17 @@ async fn download_and_install_mrpack(
                 if let Ok(path) = file.mangled_name().strip_prefix("overrides") {
                     let mut buf: Vec<u8> = vec![];
                     file.read_to_end(&mut buf).map_err(|e| e.to_string())?;
-                    return Ok(Some((get_launcher_path().join(path), buf)));
+                    return Ok(Some((path.to_owned(), buf)));
                 } else if let Ok(path) = file.mangled_name().strip_prefix("client-overrides") {
                     let mut buf: Vec<u8> = vec![];
                     file.read_to_end(&mut buf).map_err(|e| e.to_string())?;
-                    return Ok(Some((get_launcher_path().join(path), buf)));
+                    return Ok(Some((path.to_owned(), buf)));
                 }
             }
             Ok(None)
         }
         if let Some((path, buf)) = complex_helper_function(&mut mrpack, &filename)? {
+            let path = profile_base_path.join(path);
             if let Some(parent) = PathBuf::from(path.clone()).parent() {
                 tokio::fs::create_dir_all(parent)
                     .await
@@ -265,8 +290,8 @@ async fn download_and_install_mrpack(
                 .map_err(|e| e.to_string())?
         }
     }
-    let _ = app_handle.emit_all("install:progress", ("extract_overrides:complete",));
-    let _ = app_handle.emit_all("install:progress", ("install_loader:start",));
+    let _ = app_handle.emit_all("install:progress", ("extract_overrides", "complete"));
+    let _ = app_handle.emit_all("install:progress", ("install_loader", "start"));
     if index.dependencies.contains_key(&PackDependency::Forge) {
         return Err("Forge is currently unsupported".to_string());
     }
@@ -290,8 +315,8 @@ async fn download_and_install_mrpack(
         version_name = format!("quilt-loader-{}-{}", quilt_version, mc_version);
         install_fabriclike(&client, profile_url, &version_name).await?;
     }
-    let _ = app_handle.emit_all("install:progress", ("install_loader:complete",));
-    let _ = app_handle.emit_all("install:progress", ("add_profile:start",));
+    let _ = app_handle.emit_all("install:progress", ("install_loader", "complete"));
+    let _ = app_handle.emit_all("install:progress", ("add_profile", "start"));
     let profiles_path = get_launcher_path().join("launcher_profiles.json");
     let mut profiles: serde_json::Value = serde_json::from_str(
         &tokio::fs::read_to_string(&profiles_path)
@@ -299,15 +324,26 @@ async fn download_and_install_mrpack(
             .map_err(|e| e.to_string())?,
     )
     .map_err(|e| e.to_string())?;
-    let profile_id = format!("{}-{}", pack_id, mc_version);
-    set_or_create_profile(&mut profiles, &profile_id, &pack_name, &icon, &version_name)
-        .ok_or("Could not create launcher profile".to_string())?;
+    let profile_base_path_string = profile_base_path.to_string_lossy();
+    set_or_create_profile(
+        &mut profiles,
+        &pack_id,
+        &pack_name,
+        &icon,
+        &version_name,
+        if profile_dir.is_some() {
+            Some(&profile_base_path_string)
+        } else {
+            None
+        },
+    )
+    .ok_or("Could not create launcher profile".to_string())?;
     tokio::fs::write(
         profiles_path,
         serde_json::to_string(&profiles).map_err(|e| e.to_string())?,
     )
     .await
     .map_err(|e| e.to_string())?;
-    let _ = app_handle.emit_all("install:progress", ("add_profile:complete",));
+    let _ = app_handle.emit_all("install:progress", ("add_profile", "complete"));
     Ok(())
 }

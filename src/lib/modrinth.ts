@@ -3,6 +3,8 @@ export interface Project {
 }
 
 export interface Version {
+    name: string
+    id: string
     game_versions: string[]
     featured: boolean
     files: VersionFile[]

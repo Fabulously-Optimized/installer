@@ -11,12 +11,14 @@ export async function download_and_install_mrpack(
 	url: string,
 	pack_id: string,
 	icon: Blob,
-	pack_name: string
+	pack_name: string,
+    profile_dir: string | undefined
 ): Promise<void> {
 	invoke('download_and_install_mrpack', {
 		url: url,
 		packId: pack_id,
 		icon: await blobToDataURL(icon),
-		packName: pack_name
+		packName: pack_name,
+        profileDir: profile_dir
 	});
 }
