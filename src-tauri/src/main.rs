@@ -20,7 +20,10 @@ use zip::ZipArchive;
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![install_mrpack, get_installed_metadata])
+        .invoke_handler(tauri::generate_handler![
+            install_mrpack,
+            get_installed_metadata
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -65,13 +68,8 @@ async fn install_fabriclike(
     profile_name: &str,
 ) -> anyhow::Result<()> {
     let profile_json = client
-        .send(
-            HttpRequestBuilder::new("GET", profile_url)
-                ?
-                .response_type(ResponseType::Text),
-        )
-        .await
-        ?;
+        .send(HttpRequestBuilder::new("GET", profile_url)?.response_type(ResponseType::Text))
+        .await?;
     if profile_json.status() != StatusCode::OK {
         return Err(anyhow!("Metadata server did not respond with 200"));
     }
@@ -80,32 +78,19 @@ async fn install_fabriclike(
     let profile_json_path = profile_dir.join(format!("{}.json", &profile_name));
     let profile_jar_path = profile_dir.join(format!("{}.jar", &profile_name));
     if !profile_dir.is_dir() {
-        tokio::fs::create_dir(&profile_dir)
-            .await
-            ?;
+        tokio::fs::create_dir(&profile_dir).await?;
     }
     tokio::fs::write(
         &profile_json_path,
-        profile_json
-            .read()
-            .await
-            ?
-            .data
-            .as_str()
-            .unwrap(),
+        profile_json.read().await?.data.as_str().unwrap(),
     )
-    .await
-    ?;
+    .await?;
     if profile_jar_path.is_file() {
-        tokio::fs::remove_file(&profile_jar_path)
-            .await
-            ?;
+        tokio::fs::remove_file(&profile_jar_path).await?;
     }
     // yes, actually
     // we create an empty file
-    tokio::fs::write(&profile_jar_path, [])
-        .await
-        ?;
+    tokio::fs::write(&profile_jar_path, []).await?;
     Ok(())
 }
 
@@ -117,7 +102,8 @@ fn set_or_create_profile(
     profile_version: &str,
     profile_dir: Option<&str>,
 ) -> Option<()> {
-    let profiles: &mut serde_json::Map<String, serde_json::Value> = json.as_object_mut()?.get_mut("profiles")?.as_object_mut()?;
+    let profiles: &mut serde_json::Map<String, serde_json::Value> =
+        json.as_object_mut()?.get_mut("profiles")?.as_object_mut()?;
     let now = time::OffsetDateTime::now_utc()
         .format(&time::format_description::well_known::Iso8601::DEFAULT)
         .ok()?;
@@ -129,24 +115,30 @@ fn set_or_create_profile(
         "lastVersionId": profile_version,
     });
     if let Some(profile_dir) = profile_dir {
-        profile.as_object_mut().unwrap().insert("gameDir".to_string(), profile_dir.into());
+        profile
+            .as_object_mut()
+            .unwrap()
+            .insert("gameDir".to_string(), profile_dir.into());
     }
     if let Some(profile_icon) = profile_icon {
-        profile.as_object_mut().unwrap().insert("icon".to_string(), profile_icon.into());
+        profile
+            .as_object_mut()
+            .unwrap()
+            .insert("icon".to_string(), profile_icon.into());
     }
     profiles.insert(profile_id.to_string(), profile);
     Some(())
 }
 
 #[tauri::command]
-async fn get_installed_metadata(
-    profile_dir: Option<String>,
-) -> Option<serde_json::Value> {
+async fn get_installed_metadata(profile_dir: Option<String>) -> Option<serde_json::Value> {
     let meta_path = match profile_dir {
         Some(path) => get_launcher_path().join(PathBuf::from(path)),
         None => get_launcher_path(),
-    }.join("paigaldaja_meta.json");
-    let meta: serde_json::Value = serde_json::from_str(&tokio::fs::read_to_string(meta_path).await.ok()?).ok()?;
+    }
+    .join("paigaldaja_meta.json");
+    let meta: serde_json::Value =
+        serde_json::from_str(&tokio::fs::read_to_string(meta_path).await.ok()?).ok()?;
     if let serde_json::Value::Object(mut map) = meta {
         map.remove("metadata")
     } else {
@@ -154,14 +146,14 @@ async fn get_installed_metadata(
     }
 }
 
-async fn get_installed_files(
-    profile_dir: Option<String>,
-) -> Option<Vec<String>> {
+async fn get_installed_files(profile_dir: Option<String>) -> Option<Vec<String>> {
     let meta_path = match profile_dir {
         Some(path) => get_launcher_path().join(PathBuf::from(path)),
         None => get_launcher_path(),
-    }.join("paigaldaja_meta.json");
-    let meta: serde_json::Value = serde_json::from_str(&tokio::fs::read_to_string(meta_path).await.ok()?).ok()?;
+    }
+    .join("paigaldaja_meta.json");
+    let meta: serde_json::Value =
+        serde_json::from_str(&tokio::fs::read_to_string(meta_path).await.ok()?).ok()?;
     if let serde_json::Value::Object(mut map) = meta {
         serde_json::from_value(map.remove("files")?).ok()
     } else {
@@ -177,9 +169,19 @@ async fn install_mrpack(
     icon: Option<String>,
     pack_name: String,
     profile_dir: Option<String>,
-    extra_metadata: serde_json::Value
+    extra_metadata: serde_json::Value,
 ) -> Result<(), String> {
-    install_mrpack_inner(app_handle, url, pack_id, icon, pack_name, profile_dir, extra_metadata).await.map_err(|e| e.to_string())
+    install_mrpack_inner(
+        app_handle,
+        url,
+        pack_id,
+        icon,
+        pack_name,
+        profile_dir,
+        extra_metadata,
+    )
+    .await
+    .map_err(|e| e.to_string())
 }
 
 async fn install_mrpack_inner(
@@ -189,7 +191,7 @@ async fn install_mrpack_inner(
     icon: Option<String>,
     pack_name: String,
     profile_dir: Option<String>,
-    extra_metadata: serde_json::Value
+    extra_metadata: serde_json::Value,
 ) -> anyhow::Result<()> {
     let profile_base_path = match profile_dir.clone() {
         Some(path) => get_launcher_path().join(PathBuf::from(path)),
@@ -206,21 +208,14 @@ async fn install_mrpack_inner(
     let _ = app_handle.emit_all("install:progress", ("load_pack", "start"));
     let mut written_files = vec![];
     let client = ClientBuilder::new().build().unwrap();
-    let request = HttpRequestBuilder::new("GET", url)
-        ?
-        .response_type(ResponseType::Binary);
+    let request = HttpRequestBuilder::new("GET", url)?.response_type(ResponseType::Binary);
     let response = client.send(request).await?;
     if response.status() != StatusCode::OK {
         return Err(anyhow!("Server did not respond with 200"));
     }
     let bytes = response.bytes().await?.data;
     let mut mrpack = zip::ZipArchive::new(Cursor::new(bytes))?;
-    let index: mrpack::PackIndex = serde_json::from_reader(
-        mrpack
-            .by_name("modrinth.index.json")
-            ?,
-    )
-    ?;
+    let index: mrpack::PackIndex = serde_json::from_reader(mrpack.by_name("modrinth.index.json")?)?;
     if index.format_version != 1 {
         return Err(anyhow!("Unknown format version {}", index.format_version));
     }
@@ -233,7 +228,10 @@ async fn install_mrpack_inner(
         ("download_files", "start", index.files.len()),
     );
     for (i, file) in index.files.into_iter().enumerate() {
-        let _ = app_handle.emit_all("install:progress", ("download_file", "start", i, &file.path));
+        let _ = app_handle.emit_all(
+            "install:progress",
+            ("download_file", "start", i, &file.path),
+        );
         if let Some(env) = file.env {
             if let Some(&mrpack::SideType::Unsupported) = env.get(&mrpack::EnvType::Client) {
                 continue;
@@ -246,16 +244,11 @@ async fn install_mrpack_inner(
                     "No SHA512 hash for file {}; This violates spec!",
                     file.path
                 ))?,
-        )
-        ?;
+        )?;
         let mut success = false;
         for url in file.downloads {
             if let Ok(resp) = client
-                .send(
-                    HttpRequestBuilder::new("GET", url)
-                        ?
-                        .response_type(ResponseType::Binary),
-                )
+                .send(HttpRequestBuilder::new("GET", url)?.response_type(ResponseType::Binary))
                 .await
             {
                 if resp.status() == StatusCode::OK {
@@ -265,16 +258,13 @@ async fn install_mrpack_inner(
                             == hash
                         {
                             if let Some(parent) = PathBuf::from(&file.path).parent() {
-                                tokio::fs::create_dir_all(profile_base_path.join(parent))
-                                    .await
-                                    ?;
+                                tokio::fs::create_dir_all(profile_base_path.join(parent)).await?;
                             }
                             tokio::fs::write(
                                 profile_base_path.join(PathBuf::from(&file.path)),
                                 blob.data,
                             )
-                            .await
-                            ?;
+                            .await?;
                             written_files.push(PathBuf::from(&file.path));
                             success = true;
                             break;
@@ -286,7 +276,10 @@ async fn install_mrpack_inner(
         if !success {
             return Err(anyhow!("Download failed for {}", file.path));
         }
-        let _ = app_handle.emit_all("install:progress", ("download_file", "complete", i, &file.path));
+        let _ = app_handle.emit_all(
+            "install:progress",
+            ("download_file", "complete", i, &file.path),
+        );
     }
     let _ = app_handle.emit_all("install:progress", ("download_files", "complete"));
     let _ = app_handle.emit_all("install:progress", ("extract_overrides", "start"));
@@ -327,13 +320,9 @@ async fn install_mrpack_inner(
         if let Some((rel_path, buf)) = complex_helper_function(&mut mrpack, &filename)? {
             let path = profile_base_path.join(&rel_path);
             if let Some(parent) = path.parent() {
-                tokio::fs::create_dir_all(parent)
-                    .await
-                    ?;
+                tokio::fs::create_dir_all(parent).await?;
             }
-            tokio::fs::write(&path, buf)
-                .await
-                ?;
+            tokio::fs::write(&path, buf).await?;
             written_files.push(rel_path);
         }
     }
@@ -365,12 +354,8 @@ async fn install_mrpack_inner(
     let _ = app_handle.emit_all("install:progress", ("install_loader", "complete"));
     let _ = app_handle.emit_all("install:progress", ("add_profile", "start"));
     let profiles_path = get_launcher_path().join("launcher_profiles.json");
-    let mut profiles: serde_json::Value = serde_json::from_str(
-        &tokio::fs::read_to_string(&profiles_path)
-            .await
-            ?,
-    )
-    ?;
+    let mut profiles: serde_json::Value =
+        serde_json::from_str(&tokio::fs::read_to_string(&profiles_path).await?)?;
     let profile_base_path_string = profile_base_path.to_string_lossy();
     set_or_create_profile(
         &mut profiles,
@@ -385,12 +370,7 @@ async fn install_mrpack_inner(
         },
     )
     .ok_or(anyhow!("Could not create launcher profile"))?;
-    tokio::fs::write(
-        profiles_path,
-        serde_json::to_string(&profiles)?,
-    )
-    .await
-    ?;
+    tokio::fs::write(profiles_path, serde_json::to_string(&profiles)?).await?;
     tokio::fs::write(
         profile_base_path.join("paigaldaja_meta.json"),
         serde_json::to_string(&serde_json::json!({
@@ -398,8 +378,7 @@ async fn install_mrpack_inner(
             "metadata": extra_metadata
         }))?,
     )
-    .await
-    ?;
+    .await?;
     let _ = app_handle.emit_all("install:progress", ("add_profile", "complete"));
     Ok(())
 }

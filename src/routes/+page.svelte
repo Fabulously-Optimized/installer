@@ -2,133 +2,172 @@
 	import { get_installed_metadata, install_mrpack } from '$lib/installer';
 	import { get_project, list_versions, type Version } from '$lib/modrinth';
 	import { listen } from '@tauri-apps/api/event';
-    import semver from 'semver';
-    const PROJECT_ID = "1KVo5zza";
-    let totalMods = Infinity;
+	import semver from 'semver';
+	const PROJECT_ID = '1KVo5zza';
+	let totalMods = Infinity;
 	listen('install:progress', (event) => {
 		console.log(event.payload);
-        const payload = event.payload as (string | number)[];
-        if (payload[1] == "start") {
-            state = 'installing';
-            switch(payload[0]) {
-                case 'clean_old':
-                    installProgress.push("Cleaning up old files");
-                    break;
-                case 'load_pack':
-                    installProgress.push("Downloading modpack");
-                    currentStep = 1
-                    break;
-                case 'download_files':
-                    installProgress.push("Downloading mods");
-                    totalMods = payload[2] as number;
-                    break;
-                case 'download_file':
-                    installProgress.push(`Downloading mod ${payload[2] as number + 1}/${totalMods}`);
-                    currentStep = payload[2] as number + 2;
-                    break;
-                case 'extract_overrides':
-                    installProgress.push("Extracting configuration files");
-                    currentStep = totalMods + 2;
-                    break;
-                case 'install_loader':
-                    installProgress.push("Installing mod loader");
-                    currentStep = totalMods + 3;
-                    break;
-                case 'add_profile':
-                    installProgress.push("Creating launcher profile");
-                    currentStep = totalMods + 4;
-                    break;
-            }
-            installProgress = installProgress;
-        }
+		const payload = event.payload as (string | number)[];
+		if (payload[1] == 'start') {
+			switch (payload[0]) {
+				case 'clean_old':
+					installProgress = 'Cleaning up old files';
+					break;
+				case 'load_pack':
+					installProgress = 'Downloading modpack';
+					currentStep = 1;
+					break;
+				case 'download_files':
+					installProgress = 'Downloading mods';
+					totalMods = payload[2] as number;
+					break;
+				case 'download_file':
+					installProgress = `Downloading ${payload[3]} (${
+						(payload[2] as number) + 1
+					}/${totalMods})`;
+					currentStep = (payload[2] as number) + 2;
+					break;
+				case 'extract_overrides':
+					installProgress = 'Extracting configuration files';
+					currentStep = totalMods + 2;
+					break;
+				case 'install_loader':
+					installProgress = 'Installing mod loader';
+					currentStep = totalMods + 3;
+					break;
+				case 'add_profile':
+					installProgress = 'Creating launcher profile';
+					currentStep = totalMods + 4;
+					break;
+			}
+		}
 	});
 	async function installPack() {
-        try {
-            const version = versions?.find(e => e.id == selected)!;
-            const url = version?.files.find(e => e.primary)?.url!
-            const mc_version = version?.game_versions[0];
-            const profile_dir = isolateProfile ? `fabulously-optimized-${mc_version}` : undefined
-            if (state != 'confirmDowngrade') {
-                const installed_metadata = await get_installed_metadata(profile_dir);
-                if (typeof installed_metadata == "object" && installed_metadata != null) {
-                    if ("mc_version" in installed_metadata && typeof installed_metadata.mc_version == "string") {
-                        const installed_mc_version = installed_metadata.mc_version;
-                        if (semver.lt(mc_version, installed_mc_version)) {
-                            state = 'confirmDowngrade'
-                            confirmDowngrade = false
-                            return
-                        }
-                    }
-                }
-            }
-            state = 'installing';
-            const project = await get_project(PROJECT_ID);
-            const icon = await fetch(project.icon_url!);
-            await install_mrpack(
-                url,
-                isolateProfile ? `fabulously-optimized-${mc_version}` : 'fabulously-optimized',
-                await icon.blob(),
-                isolateProfile ? `Fabulously Optimized ${mc_version}` : "Fabulously Optimized",
-                profile_dir,
-                {
-                    fo_version: {
-                        id: version.id,
-                        version_number: version.version_number
-                    },
-                    mc_version: mc_version
-                }
-            )
-            state = 'postInstall';
-        } catch (e) {
-            state = 'error'
-            errorMessage = String(e);
-            console.error(e);
-        }
+		try {
+			const version = versions?.find((e) => e.id == selected)!;
+			const url = version?.files.find((e) => e.primary)?.url!;
+			const mc_version = version?.game_versions[0];
+			const profile_dir = isolateProfile ? `fabulously-optimized-${mc_version}` : undefined;
+			if (state != 'confirmDowngrade') {
+				const installed_metadata = await get_installed_metadata(profile_dir);
+				if (typeof installed_metadata == 'object' && installed_metadata != null) {
+					if (
+						'mc_version' in installed_metadata &&
+						typeof installed_metadata.mc_version == 'string'
+					) {
+						const installed_mc_version = installed_metadata.mc_version;
+						if (semver.lt(mc_version, installed_mc_version)) {
+							state = 'confirmDowngrade';
+							confirmDowngrade = false;
+							return;
+						}
+					}
+				}
+			}
+			state = 'installing';
+			const project = await get_project(PROJECT_ID);
+			const icon = await fetch(project.icon_url!);
+			await install_mrpack(
+				url,
+				isolateProfile ? `fabulously-optimized-${mc_version}` : 'fabulously-optimized',
+				await icon.blob(),
+				isolateProfile ? `Fabulously Optimized ${mc_version}` : 'Fabulously Optimized',
+				profile_dir,
+				{
+					fo_version: {
+						id: version.id,
+						version_number: version.version_number
+					},
+					mc_version: mc_version
+				}
+			);
+			state = 'postInstall';
+		} catch (e) {
+			state = 'error';
+			errorMessage = String(e);
+			console.error(e);
+		}
 	}
-    let versions: Version[] | undefined = undefined;
-    let selected: string;
-    let isolateProfile: boolean = false;
-    list_versions(PROJECT_ID).then(result => {
-        versions = result.filter(e => e.featured)
-        selected = versions[0].id
-    })
-    let state: 'preInstall' | 'installing' | 'postInstall' | 'error' | 'confirmDowngrade' = 'preInstall';
-    let installProgress: string[] = [];
-    $: totalSteps = totalMods + 4;
-    let currentStep = 0;
-    let errorMessage: string | undefined = undefined;
-    let confirmDowngrade = false;
+	let versions: Version[] | undefined = undefined;
+	let selected: string;
+	let isolateProfile: boolean = false;
+	list_versions(PROJECT_ID).then((result) => {
+		versions = result.filter((e) => e.featured);
+		selected = versions[0].id;
+	});
+	let state: 'preInstall' | 'installing' | 'postInstall' | 'error' | 'confirmDowngrade' =
+		'preInstall';
+	let installProgress = '';
+	$: totalSteps = totalMods + 4;
+	let currentStep = 0;
+	let errorMessage: string | undefined = undefined;
+	let confirmDowngrade = false;
 </script>
-{#if state == 'preInstall'}
-<select bind:value={selected} disabled={versions == undefined}>
-    {#if versions == undefined}
-    <option>Loading versions...</option>
-    {:else}
-    {#each versions as version}
-        <option value={version.id}>{version.name}</option>
-    {/each}
-    {/if}
-</select>
-<input type="checkbox" bind:checked={isolateProfile} id="isolate-profile">
-<label for="isolate-profile">Create a new .minecraft directory for this version?</label>
-<button on:click={installPack} disabled={versions == undefined}>Install!</button>
-{:else if state == 'installing'}
-Installing... {(currentStep / totalSteps) * 100}%
-<progress value={currentStep / totalSteps}></progress>
-<ul>
-    {#each installProgress as line}
-    <li>{line}</li>
-    {/each}
-</ul>
-{:else if state == 'postInstall'}
-Fabulously Optimized is installed!
-{:else if state == 'error'}
-An error occurred while installing Fabulously Optimized:
-{errorMessage}
-{:else}
-Really downgrade version?
-<input type="checkbox" bind:checked={confirmDowngrade} id="confirm-downgrade">
-<label for="confirm-downgrade">I understand that downgrades can cause issues, and I want to downgrade the version.</label>
-<button on:click={() => state = 'preInstall'}>Back</button>
-<button on:click={installPack} disabled={!confirmDowngrade}>Continue</button>
-{/if}
+
+<div class="flex items-center justify-center w-full h-full">
+	<div class="flex flex-col gap-4 max-w-md">
+		{#if state == 'preInstall'}
+			<select
+				class="block w-full appearance-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-blue-500 pr-8 disabled:text-gray-400"
+				bind:value={selected}
+				disabled={versions == undefined}
+			>
+				{#if versions == undefined}
+					<option>Loading versions...</option>
+				{:else}
+					{#each versions as version}
+						<option value={version.id}>{version.name}</option>
+					{/each}
+				{/if}
+			</select>
+			<div class="flex flex-row gap-2 items-center justify-center">
+				<input
+					type="checkbox"
+					bind:checked={isolateProfile}
+					id="isolate-profile"
+					class="w-4 h-4 rounded focus:ring-blue-500 text-blue-500"
+				/>
+				<label class="text-gray-900" for="isolate-profile"
+					>Create a new .minecraft directory for this version?</label
+				>
+			</div>
+			<button
+				class="rounded-full py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-blue-600 text-white enabled:hover:text-slate-100 enabled:hover:bg-blue-500 active:bg-blue-800 active:text-blue-100 focus-visible:outline-blue-600 disabled:text-slate-300 disabled:bg-blue-700"
+				on:click={installPack}
+				disabled={versions == undefined}>Install!</button
+			>
+		{:else if state == 'installing'}
+			<div class="text-center text-lg">Installing...</div>
+			<progress class="progress" value={currentStep / totalSteps} />
+			<div class="text-ellipsis whitespace-nowrap overflow-hidden">
+				{installProgress}
+			</div>
+		{:else if state == 'postInstall'}
+			<div class="text-center text-lg">Fabulously Optimized is installed!</div>
+		{:else if state == 'error'}
+			<div class="text-center text-lg text-red-500">
+				An error occurred while installing Fabulously Optimized: {errorMessage}
+			</div>
+		{:else}
+			Really downgrade version?
+			<div class="flex flex-row gap-2 items-center justify-center">
+				<input
+					class="w-4 h-4 rounded focus:ring-blue-500 text-blue-500"
+					type="checkbox"
+					bind:checked={confirmDowngrade}
+					id="confirm-downgrade"
+				/>
+				<label class="text-gray-900" for="confirm-downgrade"> Yes, I want to downgrade FO. </label>
+			</div>
+			<button
+				class="rounded-full py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-blue-600 text-white enabled:hover:text-slate-100 enabled:hover:bg-blue-500 active:bg-blue-800 active:text-blue-100 focus-visible:outline-blue-600"
+				on:click={() => (state = 'preInstall')}>Back</button
+			>
+			<button
+				class="rounded-full py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-red-600 text-white enabled:hover:text-slate-100 enabled:hover:bg-red-500 active:bg-red-800 active:text-blue-100 focus-visible:outline-blue-600 disabled:text-slate-100 disabled:bg-red-700"
+				on:click={installPack}
+				disabled={!confirmDowngrade}>Continue</button
+			>
+		{/if}
+	</div>
+</div>
