@@ -8,6 +8,7 @@ use std::{
     path::PathBuf,
 };
 
+use anyhow::anyhow;
 use mrpack::PackDependency;
 use sha2::Digest;
 use tauri::{
@@ -19,7 +20,7 @@ use zip::ZipArchive;
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![download_and_install_mrpack])
+        .invoke_handler(tauri::generate_handler![install_mrpack, get_installed_metadata])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -62,17 +63,17 @@ async fn install_fabriclike(
     client: &tauri::api::http::Client,
     profile_url: String,
     profile_name: &str,
-) -> Result<(), String> {
+) -> anyhow::Result<()> {
     let profile_json = client
         .send(
             HttpRequestBuilder::new("GET", profile_url)
-                .map_err(|e| e.to_string())?
+                ?
                 .response_type(ResponseType::Text),
         )
         .await
-        .map_err(|e| e.to_string())?;
+        ?;
     if profile_json.status() != StatusCode::OK {
-        return Err("Fabric metadata server did not respond with 200".to_string());
+        return Err(anyhow!("Metadata server did not respond with 200"));
     }
     let versions_dir = get_launcher_path().join("versions");
     let profile_dir = versions_dir.join(&profile_name);
@@ -81,30 +82,30 @@ async fn install_fabriclike(
     if !profile_dir.is_dir() {
         tokio::fs::create_dir(&profile_dir)
             .await
-            .map_err(|e| e.to_string())?;
+            ?;
     }
     tokio::fs::write(
         &profile_json_path,
         profile_json
             .read()
             .await
-            .map_err(|e| e.to_string())?
+            ?
             .data
             .as_str()
             .unwrap(),
     )
     .await
-    .map_err(|e| e.to_string())?;
+    ?;
     if profile_jar_path.is_file() {
         tokio::fs::remove_file(&profile_jar_path)
             .await
-            .map_err(|e| e.to_string())?;
+            ?;
     }
     // yes, actually
     // we create an empty file
     tokio::fs::write(&profile_jar_path, [])
         .await
-        .map_err(|e| e.to_string())?;
+        ?;
     Ok(())
 }
 
@@ -112,78 +113,119 @@ fn set_or_create_profile(
     json: &mut serde_json::Value,
     profile_id: &str,
     profile_name: &str,
-    profile_icon: &str,
+    profile_icon: Option<&str>,
     profile_version: &str,
     profile_dir: Option<&str>,
 ) -> Option<()> {
-    let profiles = json.as_object_mut()?.get_mut("profiles")?.as_object_mut()?;
+    let profiles: &mut serde_json::Map<String, serde_json::Value> = json.as_object_mut()?.get_mut("profiles")?.as_object_mut()?;
     let now = time::OffsetDateTime::now_utc()
         .format(&time::format_description::well_known::Iso8601::DEFAULT)
         .ok()?;
+    let mut profile = serde_json::json!({
+        "name": profile_name,
+        "type": "custom",
+        "created": now,
+        "lastUsed": now,
+        "lastVersionId": profile_version,
+    });
     if let Some(profile_dir) = profile_dir {
-        profiles.insert(
-            profile_id.to_string(),
-            serde_json::json!({
-                "name": profile_name,
-                "type": "custom",
-                "created": now,
-                "lastUsed": now,
-                "icon": profile_icon,
-                "lastVersionId": profile_version,
-                "gameDir": profile_dir
-            }),
-        );
-    } else {
-        profiles.insert(
-            profile_id.to_string(),
-            serde_json::json!({
-                "name": profile_name,
-                "type": "custom",
-                "created": now,
-                "lastUsed": now,
-                "icon": profile_icon,
-                "lastVersionId": profile_version
-            }),
-        );
+        profile.as_object_mut().unwrap().insert("gameDir".to_string(), profile_dir.into());
     }
+    if let Some(profile_icon) = profile_icon {
+        profile.as_object_mut().unwrap().insert("icon".to_string(), profile_icon.into());
+    }
+    profiles.insert(profile_id.to_string(), profile);
     Some(())
 }
 
 #[tauri::command]
-async fn download_and_install_mrpack(
+async fn get_installed_metadata(
+    profile_dir: Option<String>,
+) -> Option<serde_json::Value> {
+    let meta_path = match profile_dir {
+        Some(path) => get_launcher_path().join(PathBuf::from(path)),
+        None => get_launcher_path(),
+    }.join("paigaldaja_meta.json");
+    let meta: serde_json::Value = serde_json::from_str(&tokio::fs::read_to_string(meta_path).await.ok()?).ok()?;
+    if let serde_json::Value::Object(mut map) = meta {
+        map.remove("metadata")
+    } else {
+        None
+    }
+}
+
+async fn get_installed_files(
+    profile_dir: Option<String>,
+) -> Option<Vec<String>> {
+    let meta_path = match profile_dir {
+        Some(path) => get_launcher_path().join(PathBuf::from(path)),
+        None => get_launcher_path(),
+    }.join("paigaldaja_meta.json");
+    let meta: serde_json::Value = serde_json::from_str(&tokio::fs::read_to_string(meta_path).await.ok()?).ok()?;
+    if let serde_json::Value::Object(mut map) = meta {
+        serde_json::from_value(map.remove("files")?).ok()
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+async fn install_mrpack(
     app_handle: tauri::AppHandle,
     url: String,
     pack_id: String,
-    icon: String,
+    icon: Option<String>,
     pack_name: String,
     profile_dir: Option<String>,
+    extra_metadata: serde_json::Value
 ) -> Result<(), String> {
-    let _ = app_handle.emit_all("install:progress", ("load_pack", "start"));
+    install_mrpack_inner(app_handle, url, pack_id, icon, pack_name, profile_dir, extra_metadata).await.map_err(|e| e.to_string())
+}
+
+async fn install_mrpack_inner(
+    app_handle: tauri::AppHandle,
+    url: String,
+    pack_id: String,
+    icon: Option<String>,
+    pack_name: String,
+    profile_dir: Option<String>,
+    extra_metadata: serde_json::Value
+) -> anyhow::Result<()> {
     let profile_base_path = match profile_dir.clone() {
         Some(path) => get_launcher_path().join(PathBuf::from(path)),
         None => get_launcher_path(),
     };
+    let _ = app_handle.emit_all("install:progress", ("clean_old", "start"));
+    if let Some(files) = get_installed_files(profile_dir.clone()).await {
+        for file in files {
+            // ignore Result as cleanup failing shouldn't abort install
+            let _ = tokio::fs::remove_file(profile_base_path.join(PathBuf::from(file))).await;
+        }
+    }
+    let _ = app_handle.emit_all("install:progress", ("clean_old", "complete"));
+    let _ = app_handle.emit_all("install:progress", ("load_pack", "start"));
+    let mut written_files = vec![];
     let client = ClientBuilder::new().build().unwrap();
     let request = HttpRequestBuilder::new("GET", url)
-        .map_err(|e| e.to_string())?
+        ?
         .response_type(ResponseType::Binary);
-    let response = client.send(request).await.map_err(|e| e.to_string())?;
+    let response = client.send(request).await?;
     if response.status() != StatusCode::OK {
-        return Err("Server did not respond with 200".to_string());
+        return Err(anyhow!("Server did not respond with 200"));
     }
-    let bytes = response.bytes().await.map_err(|e| e.to_string())?.data;
-    let mut mrpack = zip::ZipArchive::new(Cursor::new(bytes)).map_err(|e| e.to_string())?;
+    let bytes = response.bytes().await?.data;
+    let mut mrpack = zip::ZipArchive::new(Cursor::new(bytes))?;
     let index: mrpack::PackIndex = serde_json::from_reader(
         mrpack
             .by_name("modrinth.index.json")
-            .map_err(|e| e.to_string())?,
+            ?,
     )
-    .map_err(|e| e.to_string())?;
+    ?;
     if index.format_version != 1 {
-        return Err(format!("Unknown format version {}", index.format_version));
+        return Err(anyhow!("Unknown format version {}", index.format_version));
     }
     if index.game != "minecraft" {
-        return Err(format!("Unknown game {}", index.game));
+        return Err(anyhow!("Unknown game {}", index.game));
     }
     let _ = app_handle.emit_all("install:progress", ("load_pack", "complete"));
     let _ = app_handle.emit_all(
@@ -191,7 +233,7 @@ async fn download_and_install_mrpack(
         ("download_files", "start", index.files.len()),
     );
     for (i, file) in index.files.into_iter().enumerate() {
-        let _ = app_handle.emit_all("install:progress", ("download_file", "start", i));
+        let _ = app_handle.emit_all("install:progress", ("download_file", "start", i, &file.path));
         if let Some(env) = file.env {
             if let Some(&mrpack::SideType::Unsupported) = env.get(&mrpack::EnvType::Client) {
                 continue;
@@ -200,18 +242,18 @@ async fn download_and_install_mrpack(
         let hash = hex::decode(
             file.hashes
                 .get(&mrpack::PackFileHash::Sha512)
-                .ok_or(format!(
+                .ok_or(anyhow!(
                     "No SHA512 hash for file {}; This violates spec!",
                     file.path
                 ))?,
         )
-        .map_err(|e| e.to_string())?;
+        ?;
         let mut success = false;
         for url in file.downloads {
             if let Ok(resp) = client
                 .send(
                     HttpRequestBuilder::new("GET", url)
-                        .map_err(|e| e.to_string())?
+                        ?
                         .response_type(ResponseType::Binary),
                 )
                 .await
@@ -222,17 +264,18 @@ async fn download_and_install_mrpack(
                             .as_ref()
                             == hash
                         {
-                            if let Some(parent) = PathBuf::from(file.path.clone()).parent() {
+                            if let Some(parent) = PathBuf::from(&file.path).parent() {
                                 tokio::fs::create_dir_all(profile_base_path.join(parent))
                                     .await
-                                    .map_err(|e| e.to_string())?;
+                                    ?;
                             }
                             tokio::fs::write(
-                                profile_base_path.join(PathBuf::from(file.path.clone())),
+                                profile_base_path.join(PathBuf::from(&file.path)),
                                 blob.data,
                             )
                             .await
-                            .map_err(|e| e.to_string())?;
+                            ?;
+                            written_files.push(PathBuf::from(&file.path));
                             success = true;
                             break;
                         }
@@ -241,9 +284,9 @@ async fn download_and_install_mrpack(
             }
         }
         if !success {
-            return Err(format!("Download failed for {}", file.path));
+            return Err(anyhow!("Download failed for {}", file.path));
         }
-        let _ = app_handle.emit_all("install:progress", ("download_file", "complete", i));
+        let _ = app_handle.emit_all("install:progress", ("download_file", "complete", i, &file.path));
     }
     let _ = app_handle.emit_all("install:progress", ("download_files", "complete"));
     let _ = app_handle.emit_all("install:progress", ("extract_overrides", "start"));
@@ -257,7 +300,7 @@ async fn download_and_install_mrpack(
         fn complex_helper_function<T>(
             archive: &mut ZipArchive<T>,
             filename: &str,
-        ) -> Result<Option<(PathBuf, Vec<u8>)>, String>
+        ) -> anyhow::Result<Option<(PathBuf, Vec<u8>)>>
         where
             T: std::io::Read,
             T: std::io::Seek,
@@ -267,40 +310,41 @@ async fn download_and_install_mrpack(
             {
                 return Ok(None);
             }
-            let mut file = archive.by_name(filename).map_err(|e| e.to_string())?;
+            let mut file = archive.by_name(filename)?;
             if file.is_file() {
                 if let Ok(path) = file.mangled_name().strip_prefix("overrides") {
                     let mut buf: Vec<u8> = vec![];
-                    file.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+                    file.read_to_end(&mut buf)?;
                     return Ok(Some((path.to_owned(), buf)));
                 } else if let Ok(path) = file.mangled_name().strip_prefix("client-overrides") {
                     let mut buf: Vec<u8> = vec![];
-                    file.read_to_end(&mut buf).map_err(|e| e.to_string())?;
+                    file.read_to_end(&mut buf)?;
                     return Ok(Some((path.to_owned(), buf)));
                 }
             }
             Ok(None)
         }
-        if let Some((path, buf)) = complex_helper_function(&mut mrpack, &filename)? {
-            let path = profile_base_path.join(path);
-            if let Some(parent) = PathBuf::from(path.clone()).parent() {
+        if let Some((rel_path, buf)) = complex_helper_function(&mut mrpack, &filename)? {
+            let path = profile_base_path.join(&rel_path);
+            if let Some(parent) = path.parent() {
                 tokio::fs::create_dir_all(parent)
                     .await
-                    .map_err(|e| e.to_string())?;
+                    ?;
             }
-            tokio::fs::write(path, buf)
+            tokio::fs::write(&path, buf)
                 .await
-                .map_err(|e| e.to_string())?
+                ?;
+            written_files.push(rel_path);
         }
     }
     let _ = app_handle.emit_all("install:progress", ("extract_overrides", "complete"));
     let _ = app_handle.emit_all("install:progress", ("install_loader", "start"));
     if index.dependencies.contains_key(&PackDependency::Forge) {
-        return Err("Forge is currently unsupported".to_string());
+        return Err(anyhow!("Forge is currently unsupported"));
     }
     let mc_version = match index.dependencies.get(&PackDependency::Minecraft) {
         Some(version) => version,
-        None => return Err("Modpack does not specify Minecraft version".to_string()),
+        None => return Err(anyhow!("Modpack does not specify Minecraft version")),
     };
     let mut version_name = mc_version.clone();
     if let Some(fabric_version) = index.dependencies.get(&PackDependency::FabricLoader) {
@@ -324,15 +368,15 @@ async fn download_and_install_mrpack(
     let mut profiles: serde_json::Value = serde_json::from_str(
         &tokio::fs::read_to_string(&profiles_path)
             .await
-            .map_err(|e| e.to_string())?,
+            ?,
     )
-    .map_err(|e| e.to_string())?;
+    ?;
     let profile_base_path_string = profile_base_path.to_string_lossy();
     set_or_create_profile(
         &mut profiles,
         &pack_id,
         &pack_name,
-        &icon,
+        icon.as_deref(),
         &version_name,
         if profile_dir.is_some() {
             Some(&profile_base_path_string)
@@ -340,13 +384,22 @@ async fn download_and_install_mrpack(
             None
         },
     )
-    .ok_or("Could not create launcher profile".to_string())?;
+    .ok_or(anyhow!("Could not create launcher profile"))?;
     tokio::fs::write(
         profiles_path,
-        serde_json::to_string(&profiles).map_err(|e| e.to_string())?,
+        serde_json::to_string(&profiles)?,
     )
     .await
-    .map_err(|e| e.to_string())?;
+    ?;
+    tokio::fs::write(
+        profile_base_path.join("paigaldaja_meta.json"),
+        serde_json::to_string(&serde_json::json!({
+            "files": written_files,
+            "metadata": extra_metadata
+        }))?,
+    )
+    .await
+    ?;
     let _ = app_handle.emit_all("install:progress", ("add_profile", "complete"));
     Ok(())
 }

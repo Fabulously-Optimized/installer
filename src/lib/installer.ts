@@ -7,18 +7,26 @@ function blobToDataURL(blob: Blob): Promise<string> {
 	});
 }
 
-export async function download_and_install_mrpack(
+export async function install_mrpack(
 	url: string,
 	pack_id: string,
-	icon: Blob,
+	icon: Blob | undefined,
 	pack_name: string,
-    profile_dir: string | undefined
+    profile_dir: string | undefined,
+	extra_metadata: unknown
 ): Promise<void> {
-	invoke('download_and_install_mrpack', {
+	await invoke('install_mrpack', {
 		url: url,
 		packId: pack_id,
-		icon: await blobToDataURL(icon),
+		icon: icon != undefined ? await blobToDataURL(icon) : undefined,
 		packName: pack_name,
+        profileDir: profile_dir,
+		extraMetadata: extra_metadata
+	});
+}
+
+export async function get_installed_metadata(profile_dir: string | undefined): Promise<unknown> {
+	return await invoke('get_installed_metadata', {
         profileDir: profile_dir
 	});
 }

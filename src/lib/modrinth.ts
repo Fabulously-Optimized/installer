@@ -8,6 +8,7 @@ export interface Version {
     game_versions: string[]
     featured: boolean
     files: VersionFile[]
+    version_number: string
 }
 
 export interface VersionFile {

@@ -21,6 +21,7 @@ tokio = { version = "*", features = [ "fs" ] }
 sha2 = "0.10.6"
 hex = "0.4.3"
 time = { version = "0.3.21", features = [ "formatting" ] }
+anyhow = "1.0.71"
 
 [features]
 # by default Tauri runs in production mode
