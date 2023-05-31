@@ -3,7 +3,7 @@ name = "paigaldaja"
 version = "0.1.0"
 description = "A whitelabel .mrpack installer"
 authors = ["Skye"]
-license = ""
+license = "MIT"
 repository = ""
 edition = "2021"
 
