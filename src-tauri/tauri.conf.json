@@ -6,7 +6,7 @@
     "distDir": "../build"
   },
   "package": {
-    "productName": "paigaldaja",
+    "productName": "Fabulously Optimized Installer",
     "version": "0.1.0"
   },
   "tauri": {
@@ -57,7 +57,7 @@
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "paigaldaja",
+        "title": "Fabulously Optimized Installer",
         "width": 800
       }
     ]
