@@ -42,7 +42,7 @@ jobs:
         if: matrix.platform == 'macos-latest'
         with:
           name: macos
-          path: src-tauri/target/release/bundle/app/
+          path: src-tauri/target/release/bundle/
       - uses: actions/upload-artifact@v3
         if: matrix.platform == 'windows-latest'
         with:
