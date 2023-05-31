@@ -47,4 +47,4 @@ jobs:
         if: matrix.platform == 'windows-latest'
         with:
           name: windows
-          path: src-tauri/target/release/paigaldaja.exe
+          path: src-tauri/target/release/*.exe
