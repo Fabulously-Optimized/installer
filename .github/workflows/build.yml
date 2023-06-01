@@ -33,17 +33,20 @@ jobs:
         run: pnpm install
       - name: Compile software
         run: pnpm tauri build --ci 
-      - uses: actions/upload-artifact@v3
+      - name: Upload the Linux packages
+        uses: actions/upload-artifact@v3
         if: matrix.platform == 'ubuntu-22.04'
         with:
           name: linux-packages
           path: src-tauri/target/release/bundle/appimage/*.AppImage
-      - uses: actions/upload-artifact@v3
+      - name: Upload the macOS packages
+        uses: actions/upload-artifact@v3
         if: matrix.platform == 'macos-13'
         with:
           name: macos-packages
           path: src-tauri/target/release/bundle/dmg/*.dmg
-      - uses: actions/upload-artifact@v3
+      - name: Upload the Windows packages
+        uses: actions/upload-artifact@v3
         if: matrix.platform == 'windows-2022'
         with:
           name: windows-packages
