@@ -9,7 +9,7 @@ export interface Version {
 	featured: boolean;
 	files: VersionFile[];
 	version_number: string;
-	version_type: "release" | "beta" | "alpha"
+	version_type: 'release' | 'beta' | 'alpha';
 }
 
 export interface VersionFile {

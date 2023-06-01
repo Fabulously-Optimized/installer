@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { get_installed_metadata, install_mrpack } from '$lib/installer';
 	import { get_project, list_versions, type Version } from '$lib/modrinth';
-	import { listen } from '@tauri-apps/api/event';
+	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+	import { appWindow } from "@tauri-apps/api/window";
+	import { confirm } from '@tauri-apps/api/dialog';
 	import semver from 'semver';
 	const PROJECT_ID = '1KVo5zza';
 	let totalMods = Infinity;
@@ -42,7 +44,20 @@
 			}
 		}
 	});
+	function confirmUnload(ev: BeforeUnloadEvent) {
+		ev.preventDefault();
+		return (ev.returnValue =
+			'Fabulously Optimized is installing. Are you sure you want to exit?');
+	}
 	async function installPack() {
+		addEventListener('beforeunload', confirmUnload);
+		const unlisten = await appWindow.onCloseRequested(async (ev) => {
+			const confirmed = await confirm('Fabulously Optimized is installing. Are you sure you want to exit?');
+			if (!confirmed) {
+				// user did not confirm closing the window; let's prevent it
+				ev.preventDefault();
+			}
+		});
 		try {
 			const version = versions?.find((e) => e.id == selected)!;
 			const url = version?.files.find((e) => e.primary)?.url!;
@@ -59,6 +74,8 @@
 						if (semver.lt(mc_version, installed_mc_version)) {
 							state = 'confirmDowngrade';
 							confirmDowngrade = false;
+							removeEventListener("beforeunload", confirmUnload);
+							unlisten()
 							return;
 						}
 					}
@@ -86,6 +103,9 @@
 			state = 'error';
 			errorMessage = String(e);
 			console.error(e);
+		} finally {
+			removeEventListener("beforeunload", confirmUnload);
+			unlisten()
 		}
 	}
 	let versions: Version[] | undefined = undefined;
@@ -93,9 +113,9 @@
 	let isolateProfile: boolean = false;
 	list_versions(PROJECT_ID).then((result) => {
 		const featured_versions = result.filter((e) => e.featured);
-		const release_versions = featured_versions.filter(e => e.version_type == "release");
-		const beta_versions = featured_versions.filter(e => e.version_type == "beta");
-		const alpha_versions = featured_versions.filter(e => e.version_type == "alpha");
+		const release_versions = featured_versions.filter((e) => e.version_type == 'release');
+		const beta_versions = featured_versions.filter((e) => e.version_type == 'beta');
+		const alpha_versions = featured_versions.filter((e) => e.version_type == 'alpha');
 		versions = release_versions.concat(beta_versions, alpha_versions);
 		selected = versions[0].id;
 	});
