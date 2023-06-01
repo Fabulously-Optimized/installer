@@ -92,7 +92,11 @@
 	let selected: string;
 	let isolateProfile: boolean = false;
 	list_versions(PROJECT_ID).then((result) => {
-		versions = result.filter((e) => e.featured);
+		const featured_versions = result.filter((e) => e.featured);
+		const release_versions = featured_versions.filter(e => e.version_type == "release");
+		const beta_versions = featured_versions.filter(e => e.version_type == "beta");
+		const alpha_versions = featured_versions.filter(e => e.version_type == "alpha");
+		versions = release_versions.concat(beta_versions, alpha_versions);
 		selected = versions[0].id;
 	});
 	let state: 'preInstall' | 'installing' | 'postInstall' | 'error' | 'confirmDowngrade' =
