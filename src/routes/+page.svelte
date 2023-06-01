@@ -128,7 +128,7 @@
 	let confirmDowngrade = false;
 </script>
 
-<div class="flex items-center justify-center w-full h-full frappe dark:macchiato bg-base text-text">
+<div class="flex items-center justify-center w-full h-full latte dark:macchiato bg-base text-text">
 	<div class="flex flex-col gap-4 max-w-md">
 		{#if state == 'preInstall'}
 			<select
