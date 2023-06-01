@@ -9,6 +9,9 @@ dependencies:
     version: 7.5.1
 
 devDependencies:
+  '@catppuccin/tailwindcss':
+    specifier: ^0.1.1
+    version: 0.1.1
   '@sveltejs/adapter-static':
     specifier: ^2.0.0
     version: 2.0.2(@sveltejs/kit@1.20.0)
@@ -84,6 +87,19 @@ packages:
   /@alloc/quick-lru@5.2.0:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
+    dev: true
+
+  /@catppuccin/palette@0.1.5:
+    resolution: {integrity: sha512-IQLsZwXDMpLc5CFGjIMa/gFnnFL/QLB280F11B51JweZHerZ/FgPXdIR4eQqn1CgrqI3wGfgnj1LVPx12DV/Uw==}
+    dev: true
+
+  /@catppuccin/tailwindcss@0.1.1:
+    resolution: {integrity: sha512-WWOzx8uOf3QPZ1HdVSkpgaqzMzrfYpOgAketQAQ7493eFhlYC4bJ1ViT5ukhwfhzuu3xnmke+Op2qjhHnyjt8g==}
+    dependencies:
+      '@catppuccin/palette': 0.1.5
+      tailwindcss: 3.3.2
+    transitivePeerDependencies:
+      - ts-node
     dev: true
 
   /@esbuild/android-arm64@0.17.19:

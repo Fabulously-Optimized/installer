@@ -128,11 +128,11 @@
 	let confirmDowngrade = false;
 </script>
 
-<div class="flex items-center justify-center w-full h-full">
+<div class="flex items-center justify-center w-full h-full frappe dark:macchiato bg-base text-text">
 	<div class="flex flex-col gap-4 max-w-md">
 		{#if state == 'preInstall'}
 			<select
-				class="block w-full appearance-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-gray-900 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-blue-500 pr-8 disabled:text-gray-400"
+				class="block w-full appearance-none bg-base rounded-md border border-surface1 px-3 py-2 focus:border-blue focus:bg-surface0 focus:outline-none focus:ring-blue pr-8 disabled:text-subtext0"
 				bind:value={selected}
 				disabled={versions == undefined}
 			>
@@ -149,14 +149,14 @@
 					type="checkbox"
 					bind:checked={isolateProfile}
 					id="isolate-profile"
-					class="w-4 h-4 rounded focus:ring-blue-500 text-blue-500"
+					class="checkbox"
 				/>
-				<label class="text-gray-900" for="isolate-profile"
+				<label for="isolate-profile"
 					>Create a new .minecraft directory for this version?</label
 				>
 			</div>
 			<button
-				class="rounded-full py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-blue-600 text-white enabled:hover:text-slate-100 enabled:hover:bg-blue-500 active:bg-blue-800 active:text-blue-100 focus-visible:outline-blue-600 disabled:text-slate-300 disabled:bg-blue-700"
+				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
 				on:click={installPack}
 				disabled={versions == undefined}>Install!</button
 			>
@@ -169,26 +169,26 @@
 		{:else if state == 'postInstall'}
 			<div class="text-center text-lg">Fabulously Optimized is installed!</div>
 		{:else if state == 'error'}
-			<div class="text-center text-lg text-red-500">
+			<div class="text-center text-lg text-red">
 				An error occurred while installing Fabulously Optimized: {errorMessage}
 			</div>
 		{:else}
 			Really downgrade version?
 			<div class="flex flex-row gap-2 items-center justify-center">
 				<input
-					class="w-4 h-4 rounded focus:ring-blue-500 text-blue-500"
+					class="checkbox"
 					type="checkbox"
 					bind:checked={confirmDowngrade}
 					id="confirm-downgrade"
 				/>
-				<label class="text-gray-900" for="confirm-downgrade"> Yes, I want to downgrade FO. </label>
+				<label for="confirm-downgrade"> Yes, I want to downgrade FO. </label>
 			</div>
 			<button
-				class="rounded-full py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-blue-600 text-white enabled:hover:text-slate-100 enabled:hover:bg-blue-500 active:bg-blue-800 active:text-blue-100 focus-visible:outline-blue-600"
+				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
 				on:click={() => (state = 'preInstall')}>Back</button
 			>
 			<button
-				class="rounded-full py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-red-600 text-white enabled:hover:text-slate-100 enabled:hover:bg-red-500 active:bg-red-800 active:text-blue-100 focus-visible:outline-blue-600 disabled:text-slate-100 disabled:bg-red-700"
+				class="rounded-full bg-red text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
 				on:click={installPack}
 				disabled={!confirmDowngrade}>Continue</button
 			>
