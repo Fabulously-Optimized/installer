@@ -13,13 +13,13 @@ jobs:
 
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Checkout the Repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: 18
-      - name: Setup pnpm
+      - name: Setup pNpm
         uses: pnpm/action-setup@v2
         with:
           version: latest
