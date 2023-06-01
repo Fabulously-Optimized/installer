@@ -30,7 +30,7 @@ fn main() {
 
 mod mrpack;
 
-fn get_launcher_path() -> PathBuf {
+async fn get_launcher_path() -> PathBuf {
     if let Ok(path) = std::env::var("PAIGALDAJA_LAUNCHER_PATH") {
         return PathBuf::from(path);
     }
@@ -56,9 +56,13 @@ fn get_launcher_path() -> PathBuf {
         // Rationale: home_dir is deprecated because of surprising behaviour in Windows
         // This code path only gets compiled on Linux, which is not Windows
         #[allow(deprecated)]
-        let mut path = std::env::home_dir().unwrap();
-        path.push(".minecraft");
-        path
+        let path = std::env::home_dir().unwrap();
+        // check for flatpak
+        if tokio::fs::try_exists(path.join(".var/app/com.mojang.Minecraft/.minecraft")).await.unwrap_or(false) {
+            path.join(".var/app/com.mojang.Minecraft/.minecraft")
+        } else {
+            path.join(".minecraft")
+        }
     }
 }
 
@@ -73,7 +77,7 @@ async fn install_fabriclike(
     if profile_json.status() != StatusCode::OK {
         return Err(anyhow!("Metadata server did not respond with 200"));
     }
-    let versions_dir = get_launcher_path().join("versions");
+    let versions_dir = get_launcher_path().await.join("versions");
     let profile_dir = versions_dir.join(&profile_name);
     let profile_json_path = profile_dir.join(format!("{}.json", &profile_name));
     let profile_jar_path = profile_dir.join(format!("{}.jar", &profile_name));
@@ -133,8 +137,8 @@ fn set_or_create_profile(
 #[tauri::command]
 async fn get_installed_metadata(profile_dir: Option<String>) -> Option<serde_json::Value> {
     let meta_path = match profile_dir {
-        Some(path) => get_launcher_path().join(PathBuf::from(path)),
-        None => get_launcher_path(),
+        Some(path) => get_launcher_path().await.join(PathBuf::from(path)),
+        None => get_launcher_path().await,
     }
     .join("paigaldaja_meta.json");
     let meta: serde_json::Value =
@@ -148,8 +152,8 @@ async fn get_installed_metadata(profile_dir: Option<String>) -> Option<serde_jso
 
 async fn get_installed_files(profile_dir: Option<String>) -> Option<Vec<String>> {
     let meta_path = match profile_dir {
-        Some(path) => get_launcher_path().join(PathBuf::from(path)),
-        None => get_launcher_path(),
+        Some(path) => get_launcher_path().await.join(PathBuf::from(path)),
+        None => get_launcher_path().await,
     }
     .join("paigaldaja_meta.json");
     let meta: serde_json::Value =
@@ -194,8 +198,8 @@ async fn install_mrpack_inner(
     extra_metadata: serde_json::Value,
 ) -> anyhow::Result<()> {
     let profile_base_path = match profile_dir.clone() {
-        Some(path) => get_launcher_path().join(PathBuf::from(path)),
-        None => get_launcher_path(),
+        Some(path) => get_launcher_path().await.join(PathBuf::from(path)),
+        None => get_launcher_path().await,
     };
     let _ = app_handle.emit_all("install:progress", ("clean_old", "start"));
     if let Some(files) = get_installed_files(profile_dir.clone()).await {
@@ -353,7 +357,7 @@ async fn install_mrpack_inner(
     }
     let _ = app_handle.emit_all("install:progress", ("install_loader", "complete"));
     let _ = app_handle.emit_all("install:progress", ("add_profile", "start"));
-    let profiles_path = get_launcher_path().join("launcher_profiles.json");
+    let profiles_path = get_launcher_path().await.join("launcher_profiles.json");
     let mut profiles: serde_json::Value =
         serde_json::from_str(&tokio::fs::read_to_string(&profiles_path).await?)?;
     let profile_base_path_string = profile_base_path.to_string_lossy();

@@ -12,18 +12,22 @@ progress {
 	-webkit-appearance: none;
 }
 
+.checkbox {
+	@apply w-4 h-4 rounded focus:ring-blue text-blue bg-surface0
+}
+
 .progress::-moz-progress-bar {
-	@apply bg-blue-600 rounded-full transition-all;
+	@apply bg-blue rounded-full transition-all;
 }
 
 .progress::-webkit-progress-value {
-	@apply bg-blue-600 rounded-full transition-all;
+	@apply bg-blue rounded-full transition-all;
 }
 
 .progress::-webkit-progress-bar {
-	@apply bg-gray-300 rounded-full;
+	@apply bg-surface2 rounded-full;
 }
 
 .progress {
-	@apply w-[28rem] h-3 rounded-full bg-gray-300;
+	@apply w-[28rem] h-3 rounded-full bg-surface2;
 }
