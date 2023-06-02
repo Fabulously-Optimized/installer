@@ -1,4 +1,4 @@
-name: 'build'
+name: 'Build'
 on:
   push:
 
@@ -9,42 +9,46 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [macos-latest, ubuntu-20.04, windows-latest]
+        platform: [macos-13, ubuntu-22.04, windows-2022]
 
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v3
-      - name: setup node
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 16
-      - name: setup pnpm
+          node-version: 18
+      - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8.6.0
-      - name: install Rust stable
+          version: latest
+      - name: Deploy Rust to CI
         uses: dtolnay/rust-toolchain@stable
-      - name: install dependencies (ubuntu only)
-        if: matrix.platform == 'ubuntu-20.04'
+      - name: Install dependencies (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
-      - name: install frontend dependencies
+      - name: Deploy frontend dependencies
         run: pnpm install
-      - name: build app
+      - name: Compile software
         run: pnpm tauri build --ci 
-      - uses: actions/upload-artifact@v3
-        if: matrix.platform == 'ubuntu-20.04'
+      - name: Upload the Linux packages
+        uses: actions/upload-artifact@v3
+        if: matrix.platform == 'ubuntu-22.04'
         with:
-          name: linux
+          name: linux-packages
           path: src-tauri/target/release/bundle/appimage/*.AppImage
-      - uses: actions/upload-artifact@v3
-        if: matrix.platform == 'macos-latest'
+      - name: Upload the macOS packages
+        uses: actions/upload-artifact@v3
+        if: matrix.platform == 'macos-13'
         with:
-          name: macos
+          name: macos-packages
           path: src-tauri/target/release/bundle/dmg/*.dmg
-      - uses: actions/upload-artifact@v3
-        if: matrix.platform == 'windows-latest'
+      - name: Upload the Windows packages
+        uses: actions/upload-artifact@v3
+        if: matrix.platform == 'windows-2022'
         with:
-          name: windows
+          name: windows-packages
           path: src-tauri/target/release/*.exe
