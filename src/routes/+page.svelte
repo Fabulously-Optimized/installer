@@ -173,7 +173,11 @@
 				An error occurred while installing Fabulously Optimized: {errorMessage}
 			</div>
 		{:else}
-			Really downgrade version?
+			<div>
+				You are attempting to downgrade the Minecraft version. This is <span class="inline font-semibold">NOT SUPPORTED</span> by Mojang or Fabulously Optimized and it may cause world corruption or crashes. <br>
+				If you want to do this safely, you should backup <code class="inline-code">mods</code>, <code class="inline-code">config</code> and <code class="inline-code">saves</code> folders to a different location and delete them from your .minecraft folder.<br>
+				To skip this warning after backing up the folders, delete <code class="inline-code">paigaldaja_meta.json</code> from your .minecraft folder.
+			</div>
 			<div class="flex flex-row gap-2 items-center justify-center">
 				<input
 					class="checkbox"
@@ -181,7 +185,7 @@
 					bind:checked={confirmDowngrade}
 					id="confirm-downgrade"
 				/>
-				<label for="confirm-downgrade"> Yes, I want to downgrade FO. </label>
+				<label for="confirm-downgrade">Yes, I want to downgrade FO.</label>
 			</div>
 			<button
 				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
