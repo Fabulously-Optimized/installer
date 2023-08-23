@@ -1,7 +1,11 @@
 <script lang="ts">
-	import { get_installed_metadata, install_mrpack, show_profile_dir_selector } from '$lib/installer';
+	import {
+		get_installed_metadata,
+		install_mrpack,
+		show_profile_dir_selector
+	} from '$lib/installer';
 	import { get_project, list_versions, type Version } from '$lib/modrinth';
-	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
+	import { listen } from '@tauri-apps/api/event';
 	import { appWindow } from '@tauri-apps/api/window';
 	import { confirm } from '@tauri-apps/api/dialog';
 	import { open } from '@tauri-apps/api/shell';
@@ -66,10 +70,15 @@
 			}
 		});
 		try {
-			const version = versions?.find((e) => e.id == selected)!;
-			const url = version?.files.find((e) => e.primary)?.url!;
+			const version = versions!.find((e) => e.id == selected);
+			const url = version!.files.find((e) => e.primary)!.url;
 			const mc_version = version?.game_versions[0];
-			const profile_dir = profileDirectory != "" ? profileDirectory : isolateProfile ? `fabulously-optimized-${mc_version}` : undefined;
+			const profile_dir =
+				profileDirectory != ''
+					? profileDirectory
+					: isolateProfile
+					? `fabulously-optimized-${mc_version}`
+					: undefined;
 			if (state != 'confirmDowngrade') {
 				const installed_metadata = await get_installed_metadata(profile_dir);
 				if (typeof installed_metadata == 'object' && installed_metadata != null) {
@@ -121,7 +130,7 @@
 	}
 	let versions: Version[] | undefined = undefined;
 	let selected: string;
-	let isolateProfile: boolean = false;
+	let isolateProfile = false;
 	list_versions(PROJECT_ID).then((result) => {
 		const featured_versions = result.filter((e) => e.featured);
 		const release_versions = featured_versions.filter((e) => e.version_type == 'release');
@@ -163,11 +172,10 @@
 
 	async function browseProfileDirectory() {
 		const result = await show_profile_dir_selector();
-		if (result != null)
-			profileDirectory = result;
+		if (result != null) profileDirectory = result;
 	}
 
-	let profileDirectory = "";
+	let profileDirectory = '';
 </script>
 
 <button
@@ -181,11 +189,7 @@
 	<div class="flex flex-col gap-4 max-w-md">
 		{#if state == 'preInstall'}
 			<div class="flex flex-row gap-2 items-center justify-center">
-				<select
-					class="input-box"
-					bind:value={selected}
-					disabled={versions == undefined}
-				>
+				<select class="input-box" bind:value={selected} disabled={versions == undefined}>
 					{#if versions == undefined}
 						<option>Loading versions...</option>
 					{:else}
@@ -212,7 +216,9 @@
 					id="isolate-profile"
 					class="checkbox"
 				/>
-				<label for="isolate-profile">Use a different <code class="inline-code">.minecraft</code> directory for this version?</label>
+				<label for="isolate-profile"
+					>Use a different <code class="inline-code">.minecraft</code> directory for this version?</label
+				>
 			</div>
 			{#if isolateProfile}
 				<div class="flex flex-row gap-2 items-center justify-center">
