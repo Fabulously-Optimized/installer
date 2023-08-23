@@ -5,6 +5,9 @@
 	import { appWindow } from "@tauri-apps/api/window";
 	import { confirm } from '@tauri-apps/api/dialog';
 	import semver from 'semver';
+	import LightThemeIcon from "@fluentui/svg-icons/icons/weather_sunny_24_regular.svg?raw";
+	import DarkThemeIcon from "@fluentui/svg-icons/icons/dark_theme_24_regular.svg?raw";
+	import DeviceThemeIcon from "@fluentui/svg-icons/icons/laptop_24_regular.svg?raw";
 	const PROJECT_ID = '1KVo5zza';
 	let totalMods = Infinity;
 	listen('install:progress', (event) => {
@@ -130,9 +133,28 @@
 	let currentStep = 0;
 	let errorMessage: string | undefined = undefined;
 	let confirmDowngrade = false;
+
+	const theme_icon_map = {
+		'device-theme': DeviceThemeIcon,
+		'light-theme': LightThemeIcon,
+		'dark-theme': DarkThemeIcon
+	};
+	const themes: ('device-theme' | 'light-theme' | 'dark-theme')[] = ['device-theme', 'light-theme', 'dark-theme'];
+
+	let theme: 'device-theme' | 'light-theme' | 'dark-theme' = 'device-theme';
+	$: document.body.className = theme;
+
+	function cycle_theme() {
+		const idx = themes.indexOf(theme);
+		theme = themes[(idx + 1) % 3]
+	}
 </script>
 
-<div class="flex items-center justify-center w-full h-full latte dark:macchiato bg-base text-text">
+<button class="absolute top-0 right-0 bg-surface0 rounded-lg m-4 p-2 fill-text shadow-lg" on:click={cycle_theme}>
+	{@html theme_icon_map[theme]}
+</button>
+
+<div class="flex items-center justify-center w-full h-full bg-base text-text">
 	<div class="flex flex-col gap-4 max-w-md">
 		{#if state == 'preInstall'}
 			<select
