@@ -34,12 +34,19 @@ jobs:
         run: pnpm install
       - name: Compile software
         run: pnpm tauri build --ci
-      - name: Upload the Linux packages
+      - name: Upload the Linux packages (AppImage)
         uses: actions/upload-artifact@v3
         if: matrix.platform == 'ubuntu-22.04'
         with:
           name: linux-packages
           path: src-tauri/target/release/bundle/appimage/*.AppImage
+      - name: Upload the Linux packages (ELF)
+        uses: actions/upload-artifact@v3
+        if: matrix.platform == 'ubuntu-22.04'
+        with:
+          name: linux-packages-raw
+          # TODO: a better way to find just the binary
+          path: src-tauri/target/release/fabulously-optimized-installer
       - name: Upload the macOS packages
         uses: actions/upload-artifact@v3
         if: matrix.platform == 'macos-13'
