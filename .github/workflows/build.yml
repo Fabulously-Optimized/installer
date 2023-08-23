@@ -33,7 +33,7 @@ jobs:
       - name: Deploy frontend dependencies
         run: pnpm install
       - name: Compile software
-        run: pnpm tauri build --ci 
+        run: pnpm tauri build --ci
       - name: Upload the Linux packages
         uses: actions/upload-artifact@v3
         if: matrix.platform == 'ubuntu-22.04'

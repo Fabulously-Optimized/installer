@@ -1,13 +1,16 @@
 <script lang="ts">
-	import { get_installed_metadata, install_mrpack } from '$lib/installer';
+	import { get_installed_metadata, install_mrpack, show_profile_dir_selector } from '$lib/installer';
 	import { get_project, list_versions, type Version } from '$lib/modrinth';
 	import { listen, type UnlistenFn } from '@tauri-apps/api/event';
-	import { appWindow } from "@tauri-apps/api/window";
+	import { appWindow } from '@tauri-apps/api/window';
 	import { confirm } from '@tauri-apps/api/dialog';
+	import { open } from '@tauri-apps/api/shell';
 	import semver from 'semver';
-	import LightThemeIcon from "@fluentui/svg-icons/icons/weather_sunny_24_regular.svg?raw";
-	import DarkThemeIcon from "@fluentui/svg-icons/icons/dark_theme_24_regular.svg?raw";
-	import DeviceThemeIcon from "@fluentui/svg-icons/icons/laptop_24_regular.svg?raw";
+	import LightThemeIcon from '@fluentui/svg-icons/icons/weather_sunny_24_regular.svg?raw';
+	import DarkThemeIcon from '@fluentui/svg-icons/icons/dark_theme_24_regular.svg?raw';
+	import DeviceThemeIcon from '@fluentui/svg-icons/icons/laptop_24_regular.svg?raw';
+	import HelpIcon from '@fluentui/svg-icons/icons/question_circle_32_regular.svg?raw';
+	import FolderIcon from '@fluentui/svg-icons/icons/folder_32_regular.svg?raw';
 	const PROJECT_ID = '1KVo5zza';
 	let totalMods = Infinity;
 	listen('install:progress', (event) => {
@@ -49,13 +52,14 @@
 	});
 	function confirmUnload(ev: BeforeUnloadEvent) {
 		ev.preventDefault();
-		return (ev.returnValue =
-			'Fabulously Optimized is installing. Are you sure you want to exit?');
+		return (ev.returnValue = 'Fabulously Optimized is installing. Are you sure you want to exit?');
 	}
 	async function installPack() {
 		addEventListener('beforeunload', confirmUnload);
 		const unlisten = await appWindow.onCloseRequested(async (ev) => {
-			const confirmed = await confirm('Fabulously Optimized is installing. Are you sure you want to exit?');
+			const confirmed = await confirm(
+				'Fabulously Optimized is installing. Are you sure you want to exit?'
+			);
 			if (!confirmed) {
 				// user did not confirm closing the window; let's prevent it
 				ev.preventDefault();
@@ -65,7 +69,7 @@
 			const version = versions?.find((e) => e.id == selected)!;
 			const url = version?.files.find((e) => e.primary)?.url!;
 			const mc_version = version?.game_versions[0];
-			const profile_dir = isolateProfile ? `fabulously-optimized-${mc_version}` : undefined;
+			const profile_dir = profileDirectory != "" ? profileDirectory : isolateProfile ? `fabulously-optimized-${mc_version}` : undefined;
 			if (state != 'confirmDowngrade') {
 				const installed_metadata = await get_installed_metadata(profile_dir);
 				if (typeof installed_metadata == 'object' && installed_metadata != null) {
@@ -77,8 +81,8 @@
 						if (semver.lt(mc_version, installed_mc_version)) {
 							state = 'confirmDowngrade';
 							confirmDowngrade = false;
-							removeEventListener("beforeunload", confirmUnload);
-							unlisten()
+							removeEventListener('beforeunload', confirmUnload);
+							unlisten();
 							// TODO: this is a workaround for tauri-apps/tauri#7119
 							await appWindow.onCloseRequested(() => {});
 							return;
@@ -109,8 +113,8 @@
 			errorMessage = String(e);
 			console.error(e);
 		} finally {
-			removeEventListener("beforeunload", confirmUnload);
-			unlisten()
+			removeEventListener('beforeunload', confirmUnload);
+			unlisten();
 			// TODO: this is a workaround for tauri-apps/tauri#7119
 			await appWindow.onCloseRequested(() => {});
 		}
@@ -139,37 +143,68 @@
 		'light-theme': LightThemeIcon,
 		'dark-theme': DarkThemeIcon
 	};
-	const themes: ('device-theme' | 'light-theme' | 'dark-theme')[] = ['device-theme', 'light-theme', 'dark-theme'];
+	const themes: ('device-theme' | 'light-theme' | 'dark-theme')[] = [
+		'device-theme',
+		'light-theme',
+		'dark-theme'
+	];
 
 	let theme: 'device-theme' | 'light-theme' | 'dark-theme' = 'device-theme';
 	$: document.body.className = theme;
 
 	function cycle_theme() {
 		const idx = themes.indexOf(theme);
-		theme = themes[(idx + 1) % 3]
+		theme = themes[(idx + 1) % 3];
 	}
+
+	function openHelp() {
+		open('https://fabulously-optimized.gitbook.io/modpack/readme/version-support');
+	}
+
+	async function browseProfileDirectory() {
+		const result = await show_profile_dir_selector();
+		if (result != null)
+			profileDirectory = result;
+	}
+
+	let profileDirectory = "";
 </script>
 
-<button class="absolute top-0 right-0 bg-surface0 rounded-lg m-4 p-2 fill-text shadow-lg" on:click={cycle_theme}>
+<button
+	class="absolute top-0 right-0 bg-surface0 rounded-lg m-4 p-2 fill-text shadow-lg"
+	on:click={cycle_theme}
+>
 	{@html theme_icon_map[theme]}
 </button>
 
 <div class="flex items-center justify-center w-full h-full bg-base text-text">
 	<div class="flex flex-col gap-4 max-w-md">
 		{#if state == 'preInstall'}
-			<select
-				class="block w-full appearance-none bg-base rounded-md border border-surface1 px-3 py-2 focus:border-blue focus:bg-surface0 focus:outline-none focus:ring-blue pr-8 disabled:text-subtext0"
-				bind:value={selected}
-				disabled={versions == undefined}
-			>
-				{#if versions == undefined}
-					<option>Loading versions...</option>
-				{:else}
-					{#each versions as version}
-						<option value={version.id}>{version.name}</option>
-					{/each}
-				{/if}
-			</select>
+			<div class="flex flex-row gap-2 items-center justify-center">
+				<select
+					class="input-box"
+					bind:value={selected}
+					disabled={versions == undefined}
+				>
+					{#if versions == undefined}
+						<option>Loading versions...</option>
+					{:else}
+						{#each versions as version}
+							<option value={version.id}>{version.name}</option>
+						{/each}
+					{/if}
+				</select>
+				<a
+					href="#top"
+					on:click={openHelp}
+					on:keypress={openHelp}
+					tabindex="0"
+					class="fill-text"
+					title="Vanilla Installer allows easy installation of all supported versions of Fabulously Optimized. For outdated versions, use a different launcher."
+				>
+					{@html HelpIcon}
+				</a>
+			</div>
 			<div class="flex flex-row gap-2 items-center justify-center">
 				<input
 					type="checkbox"
@@ -177,10 +212,22 @@
 					id="isolate-profile"
 					class="checkbox"
 				/>
-				<label for="isolate-profile"
-					>Create a new .minecraft directory for this version?</label
-				>
+				<label for="isolate-profile">Use a different <code class="inline-code">.minecraft</code> directory for this version?</label>
 			</div>
+			{#if isolateProfile}
+				<div class="flex flex-row gap-2 items-center justify-center">
+					<input
+						type="text"
+						bind:value={profileDirectory}
+						id="profile-directory"
+						placeholder="Leave blank to let the installer decide"
+						class="input-box"
+					/>
+					<button class="fill-text" aria-label="Browse folders" on:click={browseProfileDirectory}>
+						{@html FolderIcon}
+					</button>
+				</div>
+			{/if}
 			<button
 				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
 				on:click={installPack}
@@ -200,9 +247,16 @@
 			</div>
 		{:else}
 			<div>
-				You are attempting to downgrade the Minecraft version. This is <span class="inline font-semibold">NOT SUPPORTED</span> by Mojang or Fabulously Optimized and it may cause world corruption or crashes. <br>
-				If you want to do this safely, you should backup <code class="inline-code">mods</code>, <code class="inline-code">config</code> and <code class="inline-code">saves</code> folders to a different location and delete them from your .minecraft folder.<br>
-				To skip this warning after backing up the folders, delete <code class="inline-code">paigaldaja_meta.json</code> from your .minecraft folder.
+				You are attempting to downgrade the Minecraft version. This is <span
+					class="inline font-semibold">NOT SUPPORTED</span
+				>
+				by Mojang or Fabulously Optimized and it may cause world corruption or crashes. <br />
+				If you want to do this safely, you should backup <code class="inline-code">mods</code>,
+				<code class="inline-code">config</code>
+				and <code class="inline-code">saves</code> folders to a different location and delete them
+				from your .minecraft folder.<br />
+				To skip this warning after backing up the folders, delete
+				<code class="inline-code">paigaldaja_meta.json</code> from your .minecraft folder.
 			</div>
 			<div class="flex flex-row gap-2 items-center justify-center">
 				<input

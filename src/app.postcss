@@ -14,11 +14,11 @@ progress {
 }
 
 .inline-code {
-	@apply inline bg-surface0 p-0.5 rounded-sm
+	@apply inline bg-surface0 p-0.5 rounded-sm;
 }
 
 .checkbox {
-	@apply w-4 h-4 rounded focus:ring-blue text-blue bg-base
+	@apply w-4 h-4 rounded focus:ring-blue text-blue bg-base;
 }
 
 .progress::-moz-progress-bar {
@@ -38,13 +38,17 @@ progress {
 }
 
 .device-theme {
-	@apply latte dark:macchiato
+	@apply latte dark:macchiato;
 }
 
 .light-theme {
-	@apply latte
+	@apply latte;
 }
 
 .dark-theme {
-	@apply macchiato
+	@apply macchiato;
+}
+
+.input-box {
+	@apply block w-full appearance-none bg-base rounded-md border border-surface1 px-3 py-2 focus:border-blue focus:bg-surface0 focus:outline-none focus:ring-blue pr-8 disabled:text-subtext0;
 }

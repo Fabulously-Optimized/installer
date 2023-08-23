@@ -30,3 +30,7 @@ export async function get_installed_metadata(profile_dir: string | undefined): P
 		profileDir: profile_dir
 	});
 }
+
+export async function show_profile_dir_selector(): Promise<string | null> {
+	return await invoke('show_profile_dir_selector');
+}

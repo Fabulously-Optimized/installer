@@ -22,13 +22,23 @@ fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             install_mrpack,
-            get_installed_metadata
+            get_installed_metadata,
+            show_profile_dir_selector
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
 mod mrpack;
+
+#[tauri::command]
+async fn show_profile_dir_selector() -> Option<PathBuf> {
+    let (send, recv) = tokio::sync::oneshot::channel();
+    tauri::api::dialog::FileDialogBuilder::new()
+        .set_directory(get_launcher_path().await)
+        .pick_folder(|folder| {let _ = send.send(folder);});
+    recv.await.ok().flatten()
+}
 
 async fn get_launcher_path() -> PathBuf {
     if let Ok(path) = std::env::var("PAIGALDAJA_LAUNCHER_PATH") {

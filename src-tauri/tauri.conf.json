@@ -19,6 +19,9 @@
       "dialog": {
         "all": false,
         "confirm": true
+      },
+      "shell": {
+        "open": "^https://fabulously-optimized.gitbook.io/modpack/readme/"
       }
     },
     "bundle": {
