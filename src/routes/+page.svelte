@@ -70,7 +70,7 @@
 			}
 		});
 		try {
-			const version = versions!.find((e) => e.id == selected);
+			const version = versions!.find((e) => e.id == selected)!;
 			const url = version!.files.find((e) => e.primary)!.url;
 			const mc_version = version?.game_versions[0];
 			const profile_dir =
