@@ -78,7 +78,7 @@ async fn install_fabriclike(
         return Err(anyhow!("Metadata server did not respond with 200"));
     }
     let versions_dir = get_launcher_path().await.join("versions");
-    let profile_dir = versions_dir.join(&profile_name);
+    let profile_dir = versions_dir.join(profile_name);
     let profile_json_path = profile_dir.join(format!("{}.json", &profile_name));
     let profile_jar_path = profile_dir.join(format!("{}.jar", &profile_name));
     if !profile_dir.is_dir() {

@@ -8,30 +8,29 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
-
+        libs = with pkgs; [
+          bzip2
+          webkitgtk
+          gtk3
+          cairo
+          gdk-pixbuf
+          libsoup
+          glib
+          openssl_3
+        ];
         packages = with pkgs; [
           curl
           wget
           pkg-config
           dbus
-          openssl_3
-          glib
-          gtk3
-          libsoup
-          webkitgtk
           librsvg
-          cairo
-          gdk-pixbuf
-        ];
+        ] ++ libs;
       in
       {
         devShell = pkgs.mkShell {
           buildInputs = packages;
-
-          shellHook =
-            ''
-              export GIO_MODULE_DIR=${pkgs.glib-networking}/lib/gio/modules/
-            '';
+          GIO_MODULE_DIR = "${pkgs.glib-networking}/lib/gio/modules/";
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath libs;
         };
       });
 }
