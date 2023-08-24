@@ -217,7 +217,7 @@
 					class="checkbox"
 				/>
 				<label for="isolate-profile"
-					>Use a different <code class="inline-code">.minecraft</code> directory for this version?</label
+					>Use a subfolder inside the <code class="inline-code">.minecraft</code> folder</label
 				>
 			</div>
 			{#if isolateProfile}
@@ -226,7 +226,7 @@
 						type="text"
 						bind:value={profileDirectory}
 						id="profile-directory"
-						placeholder="Leave blank to let the installer decide"
+						placeholder="(default .minecraft folder path)"
 						class="input-box"
 					/>
 					<button class="fill-text" aria-label="Browse folders" on:click={browseProfileDirectory}>
