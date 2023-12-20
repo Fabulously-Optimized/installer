@@ -16,7 +16,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
       - name: Setup pnpm
@@ -35,26 +35,26 @@ jobs:
       - name: Compile software
         run: pnpm tauri build --ci
       - name: Upload the Linux packages (AppImage)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: matrix.platform == 'ubuntu-22.04'
         with:
           name: linux-packages
           path: src-tauri/target/release/bundle/appimage/*.AppImage
       - name: Upload the Linux packages (ELF)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: matrix.platform == 'ubuntu-22.04'
         with:
           name: linux-packages-raw
           # TODO: a better way to find just the binary
           path: src-tauri/target/release/fabulously-optimized-installer
       - name: Upload the macOS packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: matrix.platform == 'macos-13'
         with:
           name: macos-packages
           path: src-tauri/target/release/bundle/dmg/*.dmg
       - name: Upload the Windows packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: matrix.platform == 'windows-2022'
         with:
           name: windows-packages
