@@ -34,45 +34,37 @@ mod mrpack;
 #[tauri::command]
 async fn show_profile_dir_selector() -> Option<PathBuf> {
     let (send, recv) = tokio::sync::oneshot::channel();
-    tauri::api::dialog::FileDialogBuilder::new()
-        .set_directory(get_launcher_path().await)
-        .pick_folder(|folder| {let _ = send.send(folder);});
+    let mut builder = tauri::api::dialog::FileDialogBuilder::new();
+    if let Ok(path) = get_launcher_path().await {
+        builder = builder.set_directory(path)
+    }
+    builder.pick_folder(|folder| {let _ = send.send(folder);});
     recv.await.ok().flatten()
 }
 
-async fn get_launcher_path() -> PathBuf {
+async fn get_launcher_path() -> anyhow::Result<PathBuf> {
     if let Ok(path) = std::env::var("PAIGALDAJA_LAUNCHER_PATH") {
-        return PathBuf::from(path);
+        return Ok(PathBuf::from(path));
     }
     #[cfg(target_os = "windows")]
     {
-        let mut path = PathBuf::from(std::env::var("APPDATA").unwrap());
-        path.push(".minecraft");
-        path
+        let mut path = tauri::api::path::data_dir().ok_or(anyhow!("Could not determine APPDATA directory!"))?;
+        Ok(path.join(".minecraft"))
     }
     #[cfg(target_os = "macos")]
     {
-        // Rationale: home_dir is deprecated because of surprising behaviour in Windows
-        // This code path only gets compiled on macOS, which is not Windows
-        #[allow(deprecated)]
-        let mut path = std::env::home_dir().unwrap();
-        path.push("Library");
-        path.push("Application Support");
-        path.push("minecraft");
-        path
+        let mut path = tauri::api::path::local_data_dir().ok_or(anyhow!("Could not determine local data directory!"))?;
+        Ok(path.join("minecraft"))
     }
     #[cfg(target_os = "linux")]
     {
-        // Rationale: home_dir is deprecated because of surprising behaviour in Windows
-        // This code path only gets compiled on Linux, which is not Windows
-        #[allow(deprecated)]
-        let path = std::env::home_dir().unwrap();
+        let path = tauri::api::path::home_dir().ok_or(anyhow!("Could not determine home directory!"))?;
         // check for flatpak
-        if tokio::fs::try_exists(path.join(".var/app/com.mojang.Minecraft/.minecraft")).await.unwrap_or(false) {
+        Ok(if tokio::fs::try_exists(path.join(".var/app/com.mojang.Minecraft/.minecraft")).await.unwrap_or(false) {
             path.join(".var/app/com.mojang.Minecraft/.minecraft")
         } else {
             path.join(".minecraft")
-        }
+        })
     }
 }
 
@@ -87,7 +79,7 @@ async fn install_fabriclike(
     if profile_json.status() != StatusCode::OK {
         return Err(anyhow!("Metadata server did not respond with 200"));
     }
-    let versions_dir = get_launcher_path().await.join("versions");
+    let versions_dir = get_launcher_path().await?.join("versions");
     let profile_dir = versions_dir.join(profile_name);
     let profile_json_path = profile_dir.join(format!("{}.json", &profile_name));
     let profile_jar_path = profile_dir.join(format!("{}.jar", &profile_name));
@@ -146,11 +138,7 @@ fn set_or_create_profile(
 
 #[tauri::command]
 async fn get_installed_metadata(profile_dir: Option<String>) -> Option<serde_json::Value> {
-    let meta_path = match profile_dir {
-        Some(path) => get_launcher_path().await.join(PathBuf::from(path)),
-        None => get_launcher_path().await,
-    }
-    .join("paigaldaja_meta.json");
+    let meta_path = canonicalize_profile_path(&profile_dir).await.ok()?.join("paigaldaja_meta.json");
     let meta: serde_json::Value =
         serde_json::from_str(&tokio::fs::read_to_string(meta_path).await.ok()?).ok()?;
     if let serde_json::Value::Object(mut map) = meta {
@@ -160,12 +148,8 @@ async fn get_installed_metadata(profile_dir: Option<String>) -> Option<serde_jso
     }
 }
 
-async fn get_installed_files(profile_dir: Option<String>) -> Option<Vec<String>> {
-    let meta_path = match profile_dir {
-        Some(path) => get_launcher_path().await.join(PathBuf::from(path)),
-        None => get_launcher_path().await,
-    }
-    .join("paigaldaja_meta.json");
+async fn get_installed_files(profile_dir: &Option<String>) -> Option<Vec<String>> {
+    let meta_path = canonicalize_profile_path(profile_dir).await.ok()?.join("paigaldaja_meta.json");
     let meta: serde_json::Value =
         serde_json::from_str(&tokio::fs::read_to_string(meta_path).await.ok()?).ok()?;
     if let serde_json::Value::Object(mut map) = meta {
@@ -195,7 +179,19 @@ async fn install_mrpack(
         extra_metadata,
     )
     .await
-    .map_err(|e| e.to_string())
+    .map_err(|e| format!("{e:#}"))
+}
+
+async fn canonicalize_profile_path(profile_dir: &Option<String>) -> anyhow::Result<PathBuf> {
+    Ok(if let Some(path) = profile_dir {
+        let mut path = PathBuf::from(path);
+        if !path.is_absolute() {
+            path = get_launcher_path().await?.join(path);
+        }
+        path
+    } else {
+        get_launcher_path().await?
+    })
 }
 
 async fn install_mrpack_inner(
@@ -207,12 +203,9 @@ async fn install_mrpack_inner(
     profile_dir: Option<String>,
     extra_metadata: serde_json::Value,
 ) -> anyhow::Result<()> {
-    let profile_base_path = match profile_dir.clone() {
-        Some(path) => get_launcher_path().await.join(PathBuf::from(path)),
-        None => get_launcher_path().await,
-    };
+    let profile_base_path = canonicalize_profile_path(&profile_dir).await?;
     let _ = app_handle.emit_all("install:progress", ("clean_old", "start"));
-    if let Some(files) = get_installed_files(profile_dir.clone()).await {
+    if let Some(files) = get_installed_files(&profile_dir).await {
         for file in files {
             // ignore Result as cleanup failing shouldn't abort install
             let _ = tokio::fs::remove_file(profile_base_path.join(PathBuf::from(file))).await;
@@ -367,7 +360,7 @@ async fn install_mrpack_inner(
     }
     let _ = app_handle.emit_all("install:progress", ("install_loader", "complete"));
     let _ = app_handle.emit_all("install:progress", ("add_profile", "start"));
-    let profiles_path = get_launcher_path().await.join("launcher_profiles.json");
+    let profiles_path = get_launcher_path().await?.join("launcher_profiles.json");
     let mut profiles: serde_json::Value =
         serde_json::from_str(&tokio::fs::read_to_string(&profiles_path).await?)?;
     let profile_base_path_string = profile_base_path.to_string_lossy();
