@@ -24,18 +24,18 @@
 		if (payload[1] == 'start') {
 			switch (payload[0]) {
 				case 'clean_old':
-					installProgress = trans('clean_old');
+					installProgress = trans('progress.clean_old');
 					break;
 				case 'load_pack':
-					installProgress = trans('load_pack');
+					installProgress = trans('progress.load_pack');
 					currentStep = 1;
 					break;
 				case 'download_files':
-					installProgress = trans('download_files');
+					installProgress = trans('progress.download_files');
 					totalMods = payload[2] as number;
 					break;
 				case 'download_file':
-					installProgress = trans('download_file', {
+					installProgress = trans('progress.download_file', {
 						file: payload[3],
 						idx: (payload[2] as number) + 1,
 						total: totalMods
@@ -43,15 +43,15 @@
 					currentStep = (payload[2] as number) + 2;
 					break;
 				case 'extract_overrides':
-					installProgress = trans('extract_overrides');
+					installProgress = trans('progress.extract_overrides');
 					currentStep = totalMods + 2;
 					break;
 				case 'install_loader':
-					installProgress = trans('install_loader');
+					installProgress = trans('progress.install_loader');
 					currentStep = totalMods + 3;
 					break;
 				case 'add_profile':
-					installProgress = trans('add_profile');
+					installProgress = trans('progress.add_profile');
 					currentStep = totalMods + 4;
 					break;
 			}

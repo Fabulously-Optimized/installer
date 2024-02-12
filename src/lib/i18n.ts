@@ -11,23 +11,23 @@ getLocale().then(systemLocale => {
 
 export function trans(id: string, data?: Record<string, string | number | undefined>) {
     if (locale && langs[locale] && langs[locale][id]) {
-        const text = langs[locale][id];
+        let text = langs[locale][id];
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
                 const element = data[key];
                 if (element !== undefined)
-                    text.replaceAll(`{{${key}}}`, element.toString())
+                    text = text.replaceAll(`{{${key}}}`, element.toString())
             }
         }
         return text
     }
     if (langs[defaultLocale] && langs[defaultLocale][id]) {
-        const text = langs[defaultLocale][id];
+        let text = langs[defaultLocale][id];
         for (const key in data) {
             if (Object.prototype.hasOwnProperty.call(data, key)) {
                 const element = data[key];
                 if (element !== undefined)
-                    text.replaceAll(`{{${key}}}`, element.toString())
+                    text = text.replaceAll(`{{${key}}}`, element.toString())
             }
         }
         return text
