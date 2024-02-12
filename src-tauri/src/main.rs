@@ -38,7 +38,9 @@ async fn show_profile_dir_selector() -> Option<PathBuf> {
     if let Ok(path) = get_launcher_path().await {
         builder = builder.set_directory(path)
     }
-    builder.pick_folder(|folder| {let _ = send.send(folder);});
+    builder.pick_folder(|folder| {
+        let _ = send.send(folder);
+    });
     recv.await.ok().flatten()
 }
 
@@ -48,33 +50,43 @@ async fn get_launcher_path() -> anyhow::Result<PathBuf> {
     }
     #[cfg(target_os = "windows")]
     {
-        let mut path = tauri::api::path::data_dir().ok_or(anyhow!("Could not determine APPDATA directory!"))?;
+        let mut path = tauri::api::path::data_dir()
+            .ok_or(anyhow!("Could not determine APPDATA directory!"))?;
         Ok(path.join(".minecraft"))
     }
     #[cfg(target_os = "macos")]
     {
-        let mut path = tauri::api::path::local_data_dir().ok_or(anyhow!("Could not determine local data directory!"))?;
+        let mut path = tauri::api::path::local_data_dir()
+            .ok_or(anyhow!("Could not determine local data directory!"))?;
         Ok(path.join("minecraft"))
     }
     #[cfg(target_os = "linux")]
     {
-        let path = tauri::api::path::home_dir().ok_or(anyhow!("Could not determine home directory!"))?;
+        let path =
+            tauri::api::path::home_dir().ok_or(anyhow!("Could not determine home directory!"))?;
         // check for flatpak
-        Ok(if tokio::fs::try_exists(path.join(".var/app/com.mojang.Minecraft/.minecraft")).await.unwrap_or(false) {
-            path.join(".var/app/com.mojang.Minecraft/.minecraft")
-        } else {
-            path.join(".minecraft")
-        })
+        Ok(
+            if tokio::fs::try_exists(path.join(".var/app/com.mojang.Minecraft/.minecraft"))
+                .await
+                .unwrap_or(false)
+            {
+                path.join(".var/app/com.mojang.Minecraft/.minecraft")
+            } else {
+                path.join(".minecraft")
+            },
+        )
     }
 }
 
 async fn install_fabriclike(
+    app_handle: &tauri::AppHandle,
     client: &tauri::api::http::Client,
     profile_url: String,
     profile_name: &str,
 ) -> anyhow::Result<()> {
     let profile_json = client
-        .send(HttpRequestBuilder::new("GET", profile_url)?.response_type(ResponseType::Text))
+        .send(HttpRequestBuilder::new("GET", profile_url)?
+        .response_type(ResponseType::Text).header("User-Agent", format!("Paigaldaja/{} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)", app_handle.package_info().version))?)
         .await?;
     if profile_json.status() != StatusCode::OK {
         return Err(anyhow!("Metadata server did not respond with 200"));
@@ -138,7 +150,10 @@ fn set_or_create_profile(
 
 #[tauri::command]
 async fn get_installed_metadata(profile_dir: Option<String>) -> Option<serde_json::Value> {
-    let meta_path = canonicalize_profile_path(&profile_dir).await.ok()?.join("paigaldaja_meta.json");
+    let meta_path = canonicalize_profile_path(&profile_dir)
+        .await
+        .ok()?
+        .join("paigaldaja_meta.json");
     let meta: serde_json::Value =
         serde_json::from_str(&tokio::fs::read_to_string(meta_path).await.ok()?).ok()?;
     if let serde_json::Value::Object(mut map) = meta {
@@ -149,7 +164,10 @@ async fn get_installed_metadata(profile_dir: Option<String>) -> Option<serde_jso
 }
 
 async fn get_installed_files(profile_dir: &Option<String>) -> Option<Vec<String>> {
-    let meta_path = canonicalize_profile_path(profile_dir).await.ok()?.join("paigaldaja_meta.json");
+    let meta_path = canonicalize_profile_path(profile_dir)
+        .await
+        .ok()?
+        .join("paigaldaja_meta.json");
     let meta: serde_json::Value =
         serde_json::from_str(&tokio::fs::read_to_string(meta_path).await.ok()?).ok()?;
     if let serde_json::Value::Object(mut map) = meta {
@@ -215,7 +233,15 @@ async fn install_mrpack_inner(
     let _ = app_handle.emit_all("install:progress", ("load_pack", "start"));
     let mut written_files = vec![];
     let client = ClientBuilder::new().build().unwrap();
-    let request = HttpRequestBuilder::new("GET", url)?.response_type(ResponseType::Binary);
+    let request = HttpRequestBuilder::new("GET", url)?
+        .response_type(ResponseType::Binary)
+        .header(
+            "User-Agent",
+            format!(
+                "Paigaldaja/{} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)",
+                app_handle.package_info().version
+            ),
+        )?;
     let response = client.send(request).await?;
     if response.status() != StatusCode::OK {
         return Err(anyhow!("Server did not respond with 200"));
@@ -255,7 +281,11 @@ async fn install_mrpack_inner(
         let mut success = false;
         for url in file.downloads {
             if let Ok(resp) = client
-                .send(HttpRequestBuilder::new("GET", url)?.response_type(ResponseType::Binary))
+                .send(
+                    HttpRequestBuilder::new("GET", url)?
+                    .response_type(ResponseType::Binary)
+                    .header("User-Agent", format!("Paigaldaja/{} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)", app_handle.package_info().version))?
+                )
                 .await
             {
                 if resp.status() == StatusCode::OK {
@@ -349,14 +379,14 @@ async fn install_mrpack_inner(
             mc_version, fabric_version
         );
         version_name = format!("fabric-loader-{}-{}", fabric_version, mc_version);
-        install_fabriclike(&client, profile_url, &version_name).await?;
+        install_fabriclike(&app_handle, &client, profile_url, &version_name).await?;
     } else if let Some(quilt_version) = index.dependencies.get(&PackDependency::QuiltLoader) {
         let profile_url = format!(
             "https://meta.quiltmc.org/v3/versions/loader/{}/{}/profile/json",
             mc_version, quilt_version
         );
         version_name = format!("quilt-loader-{}-{}", quilt_version, mc_version);
-        install_fabriclike(&client, profile_url, &version_name).await?;
+        install_fabriclike(&app_handle, &client, profile_url, &version_name).await?;
     }
     let _ = app_handle.emit_all("install:progress", ("install_loader", "complete"));
     let _ = app_handle.emit_all("install:progress", ("add_profile", "start"));
