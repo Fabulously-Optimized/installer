@@ -5,6 +5,7 @@
 		show_profile_dir_selector
 	} from '$lib/installer';
 	import { get_project, list_versions, type Version } from '$lib/modrinth';
+  	import { trans } from '$lib/i18n';
 	import { listen } from '@tauri-apps/api/event';
 	import { appWindow } from '@tauri-apps/api/window';
 	import { confirm } from '@tauri-apps/api/dialog';
@@ -23,32 +24,34 @@
 		if (payload[1] == 'start') {
 			switch (payload[0]) {
 				case 'clean_old':
-					installProgress = 'Cleaning up old files';
+					installProgress = trans('clean_old');
 					break;
 				case 'load_pack':
-					installProgress = 'Downloading modpack';
+					installProgress = trans('load_pack');
 					currentStep = 1;
 					break;
 				case 'download_files':
-					installProgress = 'Downloading mods';
+					installProgress = trans('download_files');
 					totalMods = payload[2] as number;
 					break;
 				case 'download_file':
-					installProgress = `Downloading ${payload[3]} (${
-						(payload[2] as number) + 1
-					}/${totalMods})`;
+					installProgress = trans('download_file', {
+						file: payload[3],
+						idx: (payload[2] as number) + 1,
+						total: totalMods
+					});
 					currentStep = (payload[2] as number) + 2;
 					break;
 				case 'extract_overrides':
-					installProgress = 'Extracting configuration files';
+					installProgress = trans('extract_overrides');
 					currentStep = totalMods + 2;
 					break;
 				case 'install_loader':
-					installProgress = 'Installing mod loader';
+					installProgress = trans('install_loader');
 					currentStep = totalMods + 3;
 					break;
 				case 'add_profile':
-					installProgress = 'Creating launcher profile';
+					installProgress = trans('add_profile');
 					currentStep = totalMods + 4;
 					break;
 			}
@@ -56,13 +59,13 @@
 	});
 	function confirmUnload(ev: BeforeUnloadEvent) {
 		ev.preventDefault();
-		return (ev.returnValue = 'Fabulously Optimized is installing. Are you sure you want to exit?');
+		return (ev.returnValue = trans("ui.confirm-exit"));
 	}
 	async function installPack() {
 		addEventListener('beforeunload', confirmUnload);
 		const unlisten = await appWindow.onCloseRequested(async (ev) => {
 			const confirmed = await confirm(
-				'Fabulously Optimized is installing. Are you sure you want to exit?'
+				trans("ui.confirm-exit")
 			);
 			if (!confirmed) {
 				// user did not confirm closing the window; let's prevent it
@@ -185,7 +188,7 @@
 			<div class="flex flex-row gap-2 items-center justify-center">
 				<select class="input-box" bind:value={selected} disabled={versions == undefined}>
 					{#if versions == undefined}
-						<option>Loading versions...</option>
+						<option>{trans('ui.loading-versions')}</option>
 					{:else}
 						{#each versions as version}
 							<option value={version.id}>{version.name}</option>
@@ -198,7 +201,7 @@
 					on:keypress={openHelp}
 					tabindex="0"
 					class="fill-text"
-					title="Vanilla Installer allows easy installation of all supported versions of Fabulously Optimized. For outdated versions, use a different launcher."
+					title={trans('ui.version-tooltip')}
 				>
 					{@html HelpIcon}
 				</a>
@@ -211,7 +214,7 @@
 					class="checkbox"
 				/>
 				<label for="isolate-profile"
-					>Use a different <code class="inline-code">.minecraft</code> directory for this version?</label
+					>{@html trans('ui.isolate-profile')}</label
 				>
 			</div>
 			{#if isolateProfile}
@@ -220,10 +223,10 @@
 						type="text"
 						bind:value={profileDirectory}
 						id="profile-directory"
-						placeholder="Leave blank to let the installer decide"
+						placeholder={trans('ui.profile-dir-placeholder')}
 						class="input-box"
 					/>
-					<button class="fill-text" aria-label="Browse folders" on:click={browseProfileDirectory}>
+					<button class="fill-text" aria-label={trans('ui.profile-dir-browse-label')} on:click={browseProfileDirectory}>
 						{@html FolderIcon}
 					</button>
 				</div>
@@ -231,32 +234,23 @@
 			<button
 				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
 				on:click={installPack}
-				disabled={versions == undefined}>Install!</button
+				disabled={versions == undefined}>{trans('ui.install-button')}</button
 			>
 		{:else if state == 'installing'}
-			<div class="text-center text-lg">Installing...</div>
+			<div class="text-center text-lg">{trans('ui.installing')}</div>
 			<progress class="progress" value={currentStep / totalSteps} />
 			<div class="text-ellipsis whitespace-nowrap overflow-hidden">
 				{installProgress}
 			</div>
 		{:else if state == 'postInstall'}
-			<div class="text-center text-lg">Fabulously Optimized is installed!</div>
+			<div class="text-center text-lg">{trans('ui.installed')}</div>
 		{:else if state == 'error'}
 			<div class="text-center text-lg text-red">
-				An error occurred while installing Fabulously Optimized: {errorMessage}
+				{@html trans('ui.install-error', { errorMessage })}
 			</div>
 		{:else}
 			<div>
-				You are attempting to downgrade the Minecraft version. This is <span
-					class="inline font-semibold">NOT SUPPORTED</span
-				>
-				by Mojang or Fabulously Optimized and it may cause world corruption or crashes. <br />
-				If you want to do this safely, you should backup <code class="inline-code">mods</code>,
-				<code class="inline-code">config</code>
-				and <code class="inline-code">saves</code> folders to a different location and delete them
-				from your .minecraft folder.<br />
-				To skip this warning after backing up the folders, delete
-				<code class="inline-code">paigaldaja_meta.json</code> from your .minecraft folder.
+				{@html trans('ui.downgrade-msg')}
 			</div>
 			<div class="flex flex-row gap-2 items-center justify-center">
 				<input
@@ -265,16 +259,16 @@
 					bind:checked={confirmDowngrade}
 					id="confirm-downgrade"
 				/>
-				<label for="confirm-downgrade">Yes, I want to downgrade FO.</label>
+				<label for="confirm-downgrade">{trans('ui.confirm-downgrade')}</label>
 			</div>
 			<button
 				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
-				on:click={() => (state = 'preInstall')}>Back</button
+				on:click={() => (state = 'preInstall')}>{trans('ui.downgrade-cancel')}</button
 			>
 			<button
 				class="rounded-full bg-red text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
 				on:click={installPack}
-				disabled={!confirmDowngrade}>Continue</button
+				disabled={!confirmDowngrade}>{trans('ui.downgrade-continue')}</button
 			>
 		{/if}
 	</div>
