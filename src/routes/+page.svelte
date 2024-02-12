@@ -92,8 +92,6 @@
 							confirmDowngrade = false;
 							removeEventListener('beforeunload', confirmUnload);
 							unlisten();
-							// TODO: this is a workaround for tauri-apps/tauri#7119
-							await appWindow.onCloseRequested(() => {});
 							return;
 						}
 					}
@@ -124,8 +122,6 @@
 		} finally {
 			removeEventListener('beforeunload', confirmUnload);
 			unlisten();
-			// TODO: this is a workaround for tauri-apps/tauri#7119
-			await appWindow.onCloseRequested(() => {});
 		}
 	}
 	let versions: Version[] | undefined = undefined;
