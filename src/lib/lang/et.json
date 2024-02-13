@@ -8,7 +8,7 @@
 	"progress.add_profile": "Launcheri paigalduse loomine",
 	"ui.loading-versions": "Versioonide laadimine...",
 	"ui.version-tooltip": "Vanilla Installer lubab kerget paigaldust kõigi Fabulously Optimized toetatud versioonide jaoks. Aegunud versioonide jaoks kasuta teist käivitajat või meetodit.",
-	"ui.isolate-profile": "Kasutada selle versiooni jaoks teist <code class=\"inline-code\">.minecraft</code> kausta?",
+	"ui.isolate-profile": "Kasutad selle versiooni jaoks teist <code class=\"inline-code\">.minecraft</code> kausta?",
 	"ui.profile-dir-placeholder": "Jäta tühjaks, kui soovid et paigaldaja ise valib",
 	"ui.profile-dir-browse-label": "Sirvi kaustu",
 	"ui.install-button": "Paigalda!",
@@ -19,5 +19,9 @@
 	"ui.confirm-downgrade": "Jah, ma soovin FO versiooni alandada.",
 	"ui.downgrade-cancel": "Tagasi",
 	"ui.downgrade-continue": "Jätka",
-	"ui.confirm-exit": "Fabulously Optimized on paigaldamisel. Kas soovid kindlasti väljuda?"
+	"ui.confirm-exit": "Fabulously Optimized on paigaldamisel. Kas soovid kindlasti väljuda?",
+	"ui.no-launcher": "Paigaldaja ei suutnud tuvastada sobivat Minecraft Launcheri paigaldust. Paigaldaja ei saa jätkata. Jätkamiseks paigalda Launcher või käivita see ühe korra.",
+	"ui.no-launcher-back": "Tagasi",
+	"ui.no-launcher-continue": "Jätka",
+	"ui.back-home": "Mine tagasi pealehele"
 }
