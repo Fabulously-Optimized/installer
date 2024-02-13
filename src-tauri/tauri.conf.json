@@ -69,10 +69,12 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
         "resizable": true,
         "title": "Fabulously Optimized Installer",
-        "width": 800
+        "width": 600,
+        "height": 300,
+        "minWidth": 224,
+        "minHeight": 224
       }
     ]
   }

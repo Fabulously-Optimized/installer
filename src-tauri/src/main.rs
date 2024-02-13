@@ -5,10 +5,10 @@
 
 use std::{
     io::{Cursor, Read},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, Context};
 use mrpack::PackDependency;
 use sha2::Digest;
 use tauri::{
@@ -23,7 +23,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             install_mrpack,
             get_installed_metadata,
-            show_profile_dir_selector
+            show_profile_dir_selector,
+            is_launcher_installed
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
@@ -42,6 +43,18 @@ async fn show_profile_dir_selector() -> Option<PathBuf> {
         let _ = send.send(folder);
     });
     recv.await.ok().flatten()
+}
+
+#[tauri::command]
+async fn is_launcher_installed() -> bool {
+    if let Ok(path) = get_launcher_path()
+        .await
+        .map(|path| path.join("launcher_profiles.json"))
+    {
+        tokio::fs::try_exists(path).await.unwrap_or(false)
+    } else {
+        false
+    }
 }
 
 async fn get_launcher_path() -> anyhow::Result<PathBuf> {
@@ -96,7 +109,7 @@ async fn install_fabriclike(
     let profile_json_path = profile_dir.join(format!("{}.json", &profile_name));
     let profile_jar_path = profile_dir.join(format!("{}.jar", &profile_name));
     if !profile_dir.is_dir() {
-        tokio::fs::create_dir(&profile_dir).await?;
+        tokio::fs::create_dir_all(&profile_dir).await?;
     }
     tokio::fs::write(
         &profile_json_path,
@@ -106,9 +119,6 @@ async fn install_fabriclike(
     if profile_jar_path.is_file() {
         tokio::fs::remove_file(&profile_jar_path).await?;
     }
-    // yes, actually
-    // we create an empty file
-    tokio::fs::write(&profile_jar_path, []).await?;
     Ok(())
 }
 
@@ -212,6 +222,43 @@ async fn canonicalize_profile_path(profile_dir: &Option<String>) -> anyhow::Resu
     })
 }
 
+async fn try_download(
+    app_handle: &tauri::AppHandle,
+    client: &tauri::api::http::Client,
+    url: &str,
+    path: &str,
+    expected_hash: &[u8],
+    profile_base_path: &Path,
+) -> anyhow::Result<()> {
+    let request = HttpRequestBuilder::new("GET", url)?
+        .response_type(ResponseType::Binary)
+        .header(
+            "User-Agent",
+            format!(
+                "Paigaldaja/{} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)",
+                app_handle.package_info().version
+            ),
+        )?;
+    let resp = client.send(request).await?;
+    if resp.status() != StatusCode::OK {
+        return Err(anyhow!("Status code was not 200, but {}", resp.status()));
+    }
+    let blob = resp.bytes().await?;
+    let hash = std::convert::Into::<[u8; 64]>::into(sha2::Sha512::digest(&blob.data));
+    if &hash != expected_hash {
+        return Err(anyhow!(
+            "Wrong hash: got {}, expected {}",
+            hex::encode(hash),
+            hex::encode(expected_hash)
+        ));
+    }
+    if let Some(parent) = PathBuf::from(path).parent() {
+        tokio::fs::create_dir_all(profile_base_path.join(parent)).await?;
+    }
+    tokio::fs::write(profile_base_path.join(PathBuf::from(&path)), blob.data).await?;
+    Ok(())
+}
+
 async fn install_mrpack_inner(
     app_handle: tauri::AppHandle,
     url: String,
@@ -221,7 +268,9 @@ async fn install_mrpack_inner(
     profile_dir: Option<String>,
     extra_metadata: serde_json::Value,
 ) -> anyhow::Result<()> {
-    let profile_base_path = canonicalize_profile_path(&profile_dir).await?;
+    let profile_base_path = canonicalize_profile_path(&profile_dir)
+        .await
+        .context("Could not determine profile directory")?;
     let _ = app_handle.emit_all("install:progress", ("clean_old", "start"));
     if let Some(files) = get_installed_files(&profile_dir).await {
         for file in files {
@@ -233,7 +282,8 @@ async fn install_mrpack_inner(
     let _ = app_handle.emit_all("install:progress", ("load_pack", "start"));
     let mut written_files = vec![];
     let client = ClientBuilder::new().build().unwrap();
-    let request = HttpRequestBuilder::new("GET", url)?
+    let request = HttpRequestBuilder::new("GET", url)
+        .context("Is the .mrpack URL invalid?")?
         .response_type(ResponseType::Binary)
         .header(
             "User-Agent",
@@ -241,14 +291,28 @@ async fn install_mrpack_inner(
                 "Paigaldaja/{} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)",
                 app_handle.package_info().version
             ),
-        )?;
-    let response = client.send(request).await?;
+        )
+        .context("Could not set request metadata")?;
+    let response = client
+        .send(request)
+        .await
+        .context("Failed to fetch modpack data")?;
     if response.status() != StatusCode::OK {
         return Err(anyhow!("Server did not respond with 200"));
     }
-    let bytes = response.bytes().await?.data;
-    let mut mrpack = zip::ZipArchive::new(Cursor::new(bytes))?;
-    let index: mrpack::PackIndex = serde_json::from_reader(mrpack.by_name("modrinth.index.json")?)?;
+    let bytes = response
+        .bytes()
+        .await
+        .context("Failed to fetch modpack data")?
+        .data;
+    let mut mrpack =
+        zip::ZipArchive::new(Cursor::new(bytes)).context("Failed to parse modpack file")?;
+    let index: mrpack::PackIndex = serde_json::from_reader(
+        mrpack
+            .by_name("modrinth.index.json")
+            .context("No modrinth.index.json in mrpack?")?,
+    )
+    .context("modrinth.index.json is invalid")?;
     if index.format_version != 1 {
         return Err(anyhow!("Unknown format version {}", index.format_version));
     }
@@ -280,34 +344,19 @@ async fn install_mrpack_inner(
         )?;
         let mut success = false;
         for url in file.downloads {
-            if let Ok(resp) = client
-                .send(
-                    HttpRequestBuilder::new("GET", url)?
-                    .response_type(ResponseType::Binary)
-                    .header("User-Agent", format!("Paigaldaja/{} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)", app_handle.package_info().version))?
-                )
-                .await
+            if let Ok(()) = try_download(
+                &app_handle,
+                &client,
+                &url,
+                &file.path,
+                &hash,
+                &profile_base_path,
+            )
+            .await
             {
-                if resp.status() == StatusCode::OK {
-                    if let Ok(blob) = resp.bytes().await {
-                        if std::convert::Into::<[u8; 64]>::into(sha2::Sha512::digest(&blob.data))
-                            .as_ref()
-                            == hash
-                        {
-                            if let Some(parent) = PathBuf::from(&file.path).parent() {
-                                tokio::fs::create_dir_all(profile_base_path.join(parent)).await?;
-                            }
-                            tokio::fs::write(
-                                profile_base_path.join(PathBuf::from(&file.path)),
-                                blob.data,
-                            )
-                            .await?;
-                            written_files.push(PathBuf::from(&file.path));
-                            success = true;
-                            break;
-                        }
-                    }
-                }
+                written_files.push(PathBuf::from(&file.path));
+                success = true;
+                break;
             }
         }
         if !success {
@@ -354,12 +403,24 @@ async fn install_mrpack_inner(
             }
             Ok(None)
         }
-        if let Some((rel_path, buf)) = complex_helper_function(&mut mrpack, &filename)? {
+        if let Some((rel_path, buf)) = complex_helper_function(&mut mrpack, &filename)
+            .context("Failed to read configuration file; corrupted mrpack?")?
+        {
             let path = profile_base_path.join(&rel_path);
             if let Some(parent) = path.parent() {
-                tokio::fs::create_dir_all(parent).await?;
+                tokio::fs::create_dir_all(parent).await.with_context(|| {
+                    format!(
+                        "Failed to create directories for configuration file {}",
+                        rel_path.to_string_lossy()
+                    )
+                })?;
             }
-            tokio::fs::write(&path, buf).await?;
+            tokio::fs::write(&path, buf).await.with_context(|| {
+                format!(
+                    "Failed to write configuration file {}",
+                    rel_path.to_string_lossy()
+                )
+            })?;
             written_files.push(rel_path);
         }
     }
@@ -379,20 +440,31 @@ async fn install_mrpack_inner(
             mc_version, fabric_version
         );
         version_name = format!("fabric-loader-{}-{}", fabric_version, mc_version);
-        install_fabriclike(&app_handle, &client, profile_url, &version_name).await?;
+        install_fabriclike(&app_handle, &client, profile_url, &version_name)
+            .await
+            .context("Failed to install Fabric")?;
     } else if let Some(quilt_version) = index.dependencies.get(&PackDependency::QuiltLoader) {
         let profile_url = format!(
             "https://meta.quiltmc.org/v3/versions/loader/{}/{}/profile/json",
             mc_version, quilt_version
         );
         version_name = format!("quilt-loader-{}-{}", quilt_version, mc_version);
-        install_fabriclike(&app_handle, &client, profile_url, &version_name).await?;
+        install_fabriclike(&app_handle, &client, profile_url, &version_name)
+            .await
+            .context("Failed to install Quilt")?;
     }
     let _ = app_handle.emit_all("install:progress", ("install_loader", "complete"));
     let _ = app_handle.emit_all("install:progress", ("add_profile", "start"));
-    let profiles_path = get_launcher_path().await?.join("launcher_profiles.json");
-    let mut profiles: serde_json::Value =
-        serde_json::from_str(&tokio::fs::read_to_string(&profiles_path).await?)?;
+    let profiles_path = get_launcher_path()
+        .await
+        .context("Could not determine profile directory")?
+        .join("launcher_profiles.json");
+    let mut profiles: serde_json::Value = serde_json::from_str(
+        &tokio::fs::read_to_string(&profiles_path)
+            .await
+            .context("Failed to read launcher profiles")?,
+    )
+    .context("Failed to parse launcher profiles")?;
     let profile_base_path_string = profile_base_path.to_string_lossy();
     set_or_create_profile(
         &mut profiles,
@@ -407,7 +479,9 @@ async fn install_mrpack_inner(
         },
     )
     .ok_or(anyhow!("Could not create launcher profile"))?;
-    tokio::fs::write(profiles_path, serde_json::to_string(&profiles)?).await?;
+    tokio::fs::write(profiles_path, serde_json::to_string(&profiles)?)
+        .await
+        .context("Failed to write launcher profiles")?;
     tokio::fs::write(
         profile_base_path.join("paigaldaja_meta.json"),
         serde_json::to_string(&serde_json::json!({
@@ -415,7 +489,8 @@ async fn install_mrpack_inner(
             "metadata": extra_metadata
         }))?,
     )
-    .await?;
+    .await
+    .context("Failed to write installer metadata")?;
     let _ = app_handle.emit_all("install:progress", ("add_profile", "complete"));
     Ok(())
 }

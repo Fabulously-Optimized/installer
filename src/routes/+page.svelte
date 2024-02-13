@@ -2,10 +2,11 @@
 	import {
 		get_installed_metadata,
 		install_mrpack,
+		is_launcher_installed,
 		show_profile_dir_selector
 	} from '$lib/installer';
 	import { get_project, list_versions, type Version } from '$lib/modrinth';
-  	import { trans } from '$lib/i18n';
+	import { trans } from '$lib/i18n';
 	import { listen } from '@tauri-apps/api/event';
 	import { appWindow } from '@tauri-apps/api/window';
 	import { confirm } from '@tauri-apps/api/dialog';
@@ -59,14 +60,16 @@
 	});
 	function confirmUnload(ev: BeforeUnloadEvent) {
 		ev.preventDefault();
-		return (ev.returnValue = trans("ui.confirm-exit"));
+		return (ev.returnValue = trans('ui.confirm-exit'));
 	}
 	async function installPack() {
+		if (!(await is_launcher_installed())) {
+			state = 'noLauncher';
+			return;
+		}
 		addEventListener('beforeunload', confirmUnload);
 		const unlisten = await appWindow.onCloseRequested(async (ev) => {
-			const confirmed = await confirm(
-				trans("ui.confirm-exit")
-			);
+			const confirmed = await confirm(trans('ui.confirm-exit'));
 			if (!confirmed) {
 				// user did not confirm closing the window; let's prevent it
 				ev.preventDefault();
@@ -136,8 +139,13 @@
 		versions = featured_versions;
 		selected = release_versions[0].id;
 	});
-	let state: 'preInstall' | 'installing' | 'postInstall' | 'error' | 'confirmDowngrade' =
-		'preInstall';
+	let state:
+		| 'preInstall'
+		| 'installing'
+		| 'postInstall'
+		| 'error'
+		| 'confirmDowngrade'
+		| 'noLauncher' = 'preInstall';
 	let installProgress = '';
 	$: totalSteps = totalMods + 4;
 	let currentStep = 0;
@@ -161,6 +169,12 @@
 	function cycle_theme() {
 		const idx = themes.indexOf(theme);
 		theme = themes[(idx + 1) % 3];
+	}
+
+	function reset_state() {
+		currentStep = 0;
+		totalMods = Infinity;
+		state = 'preInstall';
 	}
 
 	function openHelp() {
@@ -213,9 +227,7 @@
 					id="isolate-profile"
 					class="checkbox"
 				/>
-				<label for="isolate-profile"
-					>{@html trans('ui.isolate-profile')}</label
-				>
+				<label for="isolate-profile">{@html trans('ui.isolate-profile')}</label>
 			</div>
 			{#if isolateProfile}
 				<div class="flex flex-row gap-2 items-center justify-center">
@@ -226,7 +238,11 @@
 						placeholder={trans('ui.profile-dir-placeholder')}
 						class="input-box"
 					/>
-					<button class="fill-text" aria-label={trans('ui.profile-dir-browse-label')} on:click={browseProfileDirectory}>
+					<button
+						class="fill-text"
+						aria-label={trans('ui.profile-dir-browse-label')}
+						on:click={browseProfileDirectory}
+					>
 						{@html FolderIcon}
 					</button>
 				</div>
@@ -244,11 +260,19 @@
 			</div>
 		{:else if state == 'postInstall'}
 			<div class="text-center text-lg">{trans('ui.installed')}</div>
+			<button
+				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
+				on:click={reset_state}>{trans('ui.back-home')}</button
+			>
 		{:else if state == 'error'}
 			<div class="text-center text-lg text-red">
 				{@html trans('ui.install-error', { errorMessage })}
 			</div>
-		{:else}
+			<button
+				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
+				on:click={reset_state}>{trans('ui.back-home')}</button
+			>
+		{:else if state == 'confirmDowngrade'}
 			<div>
 				{@html trans('ui.downgrade-msg')}
 			</div>
@@ -269,6 +293,19 @@
 				class="rounded-full bg-red text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
 				on:click={installPack}
 				disabled={!confirmDowngrade}>{trans('ui.downgrade-continue')}</button
+			>
+		{:else if state == 'noLauncher'}
+			<div>
+				{trans('ui.no-launcher')}
+			</div>
+			<button
+				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
+				on:click={() => (state = 'preInstall')}>{trans('ui.no-launcher-back')}</button
+			>
+			<button
+				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
+				on:click={installPack}
+				disabled={versions == undefined}>{trans('ui.no-launcher-continue')}</button
 			>
 		{/if}
 	</div>
