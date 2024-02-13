@@ -119,9 +119,6 @@ async fn install_fabriclike(
     if profile_jar_path.is_file() {
         tokio::fs::remove_file(&profile_jar_path).await?;
     }
-    // yes, actually
-    // we create an empty file
-    tokio::fs::write(&profile_jar_path, []).await?;
     Ok(())
 }
 
