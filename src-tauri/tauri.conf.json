@@ -22,9 +22,6 @@
       },
       "shell": {
         "open": "^https://fabulously-optimized.gitbook.io/modpack/readme/"
-      },
-      "os": {
-        "all": true
       }
     },
     "bundle": {
