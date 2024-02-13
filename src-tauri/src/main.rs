@@ -63,13 +63,13 @@ async fn get_launcher_path() -> anyhow::Result<PathBuf> {
     }
     #[cfg(target_os = "windows")]
     {
-        let mut path = tauri::api::path::data_dir()
+        let path = tauri::api::path::data_dir()
             .ok_or(anyhow!("Could not determine APPDATA directory!"))?;
         Ok(path.join(".minecraft"))
     }
     #[cfg(target_os = "macos")]
     {
-        let mut path = tauri::api::path::local_data_dir()
+        let path = tauri::api::path::local_data_dir()
             .ok_or(anyhow!("Could not determine local data directory!"))?;
         Ok(path.join("minecraft"))
     }
