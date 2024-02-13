@@ -34,3 +34,7 @@ export async function get_installed_metadata(profile_dir: string | undefined): P
 export async function show_profile_dir_selector(): Promise<string | null> {
 	return await invoke('show_profile_dir_selector');
 }
+
+export async function is_launcher_installed(): Promise<boolean> {
+	return await invoke('is_launcher_installed');
+}
