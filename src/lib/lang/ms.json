@@ -9,7 +9,7 @@
 	"ui.loading-versions": "Sedang memuat versi...",
 	"ui.version-tooltip": "Vanilla Installer membenarkan pemasangan mudah semua versi Fabulously Optimized yang disokong. Untuk versi lapuk, gunakan pelancar atau kaedah pemasangan yang berbeza.",
 	"ui.isolate-profile": "Gunakan direktori <code class=\"inline-code\">.minecraft</code> yang berbeza untuk versi ini?",
-	"ui.profile-dir-placeholder": "Apabila kosong, pemasang akan memutuskan",
+	"ui.profile-dir-placeholder": "Jika dibiar kosong, pemasang akan menentukan",
 	"ui.profile-dir-browse-label": "Semak folder",
 	"ui.install-button": "Pasang!",
 	"ui.installing": "Sedang memasang...",
