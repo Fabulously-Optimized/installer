@@ -11,5 +11,5 @@ export const langs: Record<string, Record<string, string>> = {
     ko,
     ms,
     zlm,
-    zh-TW
+    "zh-TW": zh_tw
 };
