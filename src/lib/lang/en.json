@@ -20,7 +20,7 @@
 	"ui.downgrade-cancel": "Back",
 	"ui.downgrade-continue": "Continue",
 	"ui.confirm-exit": "Fabulously Optimized is installing. Are you sure you want to exit?",
-	"ui.no-launcher": "The installer was unable to detect a Minecraft Launcher installation. The installer cannot continue. Install the launcher or launch it once to proceed.",
+	"ui.no-launcher": "The installer was unable to detect the official Minecraft Launcher. Install the launcher or launch it once to proceed.",
 	"ui.no-launcher-back": "Back",
 	"ui.no-launcher-continue": "Continue",
 	"ui.back-home": "Go back to main page"
