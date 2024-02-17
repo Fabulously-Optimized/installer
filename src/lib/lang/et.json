@@ -20,7 +20,7 @@
 	"ui.downgrade-cancel": "Tagasi",
 	"ui.downgrade-continue": "Jätka",
 	"ui.confirm-exit": "Fabulously Optimized on paigaldamisel. Kas soovid kindlasti väljuda?",
-	"ui.no-launcher": "Paigaldaja ei suutnud tuvastada sobivat Minecraft Launcheri paigaldust. Paigaldaja ei saa jätkata. Jätkamiseks paigalda Launcher või käivita see ühe korra.",
+	"ui.no-launcher": "Paigaldaja ei suutnud tuvastada ametlikku Minecraft Launcherit. Jätkamiseks paigalda Launcher või käivita see ühe korra.",
 	"ui.no-launcher-back": "Tagasi",
 	"ui.no-launcher-continue": "Jätka",
 	"ui.back-home": "Mine tagasi pealehele"
