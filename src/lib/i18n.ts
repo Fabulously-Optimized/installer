@@ -1,6 +1,14 @@
 import { langs } from './lang';
 
-const locale = navigator.language.split('-')[0];
+function determineLocale(locale: string): string {
+	if (langs[locale.toLowerCase()] != undefined) {
+		return locale.toLowerCase()
+	} else {
+		return locale.toLowerCase().split('-')[0]
+	}
+}
+
+const locale = determineLocale(navigator.language);
 const defaultLocale = 'en';
 
 export function trans(id: string, data?: Record<string, string | number | undefined>) {

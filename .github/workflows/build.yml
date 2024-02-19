@@ -9,16 +9,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+      # maybe update to macOS 14 if this is ARM64-ready?
         platform: [macos-13, ubuntu-22.04, windows-2022]
 
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.4
       - name: Checkout Repository
         uses: actions/checkout@v4
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v3
         with:
           version: latest
       - name: Setup Node
