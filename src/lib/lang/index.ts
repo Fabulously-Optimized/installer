@@ -3,8 +3,8 @@ import et from "./et.json";
 import it from "./it.json";
 import ko from "./ko.json";
 import ms from "./ms.json";
+import ms_arab from "./ms-arab.json";
 import vi from "./vi.json";
-import zlm from "./zlm.json";
 import zh_tw from "./zh-tw.json";
 
 export const langs: Record<string, Record<string, string>> = {
@@ -13,7 +13,7 @@ export const langs: Record<string, Record<string, string>> = {
     it,
     ko,
     ms,
+    "ms-arab": ms_arab,
     vi,
-    zlm,
     "zh-tw": zh_tw
 };
