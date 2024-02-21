@@ -20,7 +20,7 @@
 	"ui.downgrade-cancel": "뒤로",
 	"ui.downgrade-continue": "계속",
 	"ui.confirm-exit": "Fabulously Optimized가 설치 중입니다. 종료하시겠습니까?",
-	"ui.no-launcher": "설치 프로그램이 마인크래프트 런처 설치를 감지하지 못했습니다. 설치 프로그램을 계속할 수 없습니다. 계속하려면 런처를 설치하거나 한 번 실행하세요.",
+	"ui.no-launcher": "설치 프로그램이 공식 Minecraft 런처를 감지하지 못했습니다. 계속하려면 런처를 설치하거나 한 번 실행하세요.",
 	"ui.no-launcher-back": "뒤로",
 	"ui.no-launcher-continue": "계속",
 	"ui.back-home": "메인 페이지로 돌아가기"
