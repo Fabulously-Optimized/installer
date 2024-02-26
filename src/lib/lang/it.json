@@ -8,7 +8,7 @@
 	"progress.add_profile": "Creazione dell'installazione nel launcher",
 	"ui.loading-versions": "Caricamento versioni...",
 	"ui.version-tooltip": "Vanilla Installer consente una facile installazione di tutte le versioni supportate di Fabulously Optimized. Per versioni obsolete, utilizzare un altro launcher o un diverso metodo di installazione.",
-	"ui.isolate-profile": "Utilizzare una directory <code class=\"inline-code\">.minecraft</code> diversa per questa versione?",
+	"ui.isolate-profile": "Utilizzare una cartella <code class=\"inline-code\">.minecraft</code> diversa per questa versione?",
 	"ui.profile-dir-placeholder": "Lasciare vuoto per far decidere autonomamente all'installer",
 	"ui.profile-dir-browse-label": "Esplora cartelle",
 	"ui.install-button": "Installa!",
