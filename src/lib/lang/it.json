@@ -12,7 +12,7 @@
 	"ui.profile-dir-placeholder": "Lasciare vuoto per far decidere autonomamente all'installer",
 	"ui.profile-dir-browse-label": "Esplora cartelle",
 	"ui.install-button": "Installa!",
-	"ui.installing": "Installazione in corso ...",
+	"ui.installing": "Installazione in corso...",
 	"ui.installed": "Fabulously Optimized è stato installato!",
 	"ui.install-error": "Si è verificato un errore durante l'installazione di Fabulously Optimized: {{errorMessage}}",
 	"ui.downgrade-msg": "Si sta tentando di eseguire un downgrade della versione di Minecraft. Questa operazione <span class=\"inline font-semibold\">NON È SUPPORTATA</span> da ne Mojang ne da Fabulously Optimized e potrebbe causare corruzione del mondo o crash. <br /> Se si desidera eseguire questa operazione in modo sicuro, è necessario eseguire il backup delle cartelle <code class=\"inline-code\">mods</code>, <code class=\"inline-code\">config</code> e <code class=\"inline-code\">saves</code> in un altro percorso ed eliminarle dalla cartella .minecraft.",
