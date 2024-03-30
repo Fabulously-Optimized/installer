@@ -25,18 +25,18 @@
 		if (payload[1] == 'start') {
 			switch (payload[0]) {
 				case 'clean_old':
-					installProgress = trans('progress.clean_old');
+					installProgress = $trans('progress.clean_old');
 					break;
 				case 'load_pack':
-					installProgress = trans('progress.load_pack');
+					installProgress = $trans('progress.load_pack');
 					currentStep = 1;
 					break;
 				case 'download_files':
-					installProgress = trans('progress.download_files');
+					installProgress = $trans('progress.download_files');
 					totalMods = payload[2] as number;
 					break;
 				case 'download_file':
-					installProgress = trans('progress.download_file', {
+					installProgress = $trans('progress.download_file', {
 						file: payload[3],
 						idx: (payload[2] as number) + 1,
 						total: totalMods
@@ -44,15 +44,15 @@
 					currentStep = (payload[2] as number) + 2;
 					break;
 				case 'extract_overrides':
-					installProgress = trans('progress.extract_overrides');
+					installProgress = $trans('progress.extract_overrides');
 					currentStep = totalMods + 2;
 					break;
 				case 'install_loader':
-					installProgress = trans('progress.install_loader');
+					installProgress = $trans('progress.install_loader');
 					currentStep = totalMods + 3;
 					break;
 				case 'add_profile':
-					installProgress = trans('progress.add_profile');
+					installProgress = $trans('progress.add_profile');
 					currentStep = totalMods + 4;
 					break;
 			}
@@ -60,7 +60,7 @@
 	});
 	function confirmUnload(ev: BeforeUnloadEvent) {
 		ev.preventDefault();
-		return (ev.returnValue = trans('ui.confirm-exit'));
+		return (ev.returnValue = $trans('ui.confirm-exit'));
 	}
 	async function installPack() {
 		if (!(await is_launcher_installed())) {
@@ -69,7 +69,7 @@
 		}
 		addEventListener('beforeunload', confirmUnload);
 		const unlisten = await appWindow.onCloseRequested(async (ev) => {
-			const confirmed = await confirm(trans('ui.confirm-exit'));
+			const confirmed = await confirm($trans('ui.confirm-exit'));
 			if (!confirmed) {
 				// user did not confirm closing the window; let's prevent it
 				ev.preventDefault();
@@ -202,7 +202,7 @@
 			<div class="flex flex-row gap-2 items-center justify-center">
 				<select class="input-box" bind:value={selected} disabled={versions == undefined}>
 					{#if versions == undefined}
-						<option>{trans('ui.loading-versions')}</option>
+						<option>{$trans('ui.loading-versions')}</option>
 					{:else}
 						{#each versions as version}
 							<option value={version.id}>{version.name}</option>
@@ -215,7 +215,7 @@
 					on:keypress={openHelp}
 					tabindex="0"
 					class="fill-text"
-					title={trans('ui.version-tooltip')}
+					title={$trans('ui.version-tooltip')}
 				>
 					{@html HelpIcon}
 				</a>
@@ -227,7 +227,7 @@
 					id="isolate-profile"
 					class="checkbox"
 				/>
-				<label for="isolate-profile">{@html trans('ui.isolate-profile')}</label>
+				<label for="isolate-profile">{@html $trans('ui.isolate-profile')}</label>
 			</div>
 			{#if isolateProfile}
 				<div class="flex flex-row gap-2 items-center justify-center">
@@ -235,12 +235,12 @@
 						type="text"
 						bind:value={profileDirectory}
 						id="profile-directory"
-						placeholder={trans('ui.profile-dir-placeholder')}
+						placeholder={$trans('ui.profile-dir-placeholder')}
 						class="input-box"
 					/>
 					<button
 						class="fill-text"
-						aria-label={trans('ui.profile-dir-browse-label')}
+						aria-label={$trans('ui.profile-dir-browse-label')}
 						on:click={browseProfileDirectory}
 					>
 						{@html FolderIcon}
@@ -250,31 +250,31 @@
 			<button
 				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
 				on:click={installPack}
-				disabled={versions == undefined}>{trans('ui.install-button')}</button
+				disabled={versions == undefined}>{$trans('ui.install-button')}</button
 			>
 		{:else if state == 'installing'}
-			<div class="text-center text-lg">{trans('ui.installing')}</div>
+			<div class="text-center text-lg">{$trans('ui.installing')}</div>
 			<progress class="progress" value={currentStep / totalSteps} />
 			<div class="text-ellipsis whitespace-nowrap overflow-hidden">
 				{installProgress}
 			</div>
 		{:else if state == 'postInstall'}
-			<div class="text-center text-lg">{trans('ui.installed')}</div>
+			<div class="text-center text-lg">{$trans('ui.installed')}</div>
 			<button
 				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
-				on:click={reset_state}>{trans('ui.back-home')}</button
+				on:click={reset_state}>{$trans('ui.back-home')}</button
 			>
 		{:else if state == 'error'}
 			<div class="text-center text-lg text-red">
-				{@html trans('ui.install-error', { errorMessage })}
+				{@html $trans('ui.install-error', { errorMessage })}
 			</div>
 			<button
 				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
-				on:click={reset_state}>{trans('ui.back-home')}</button
+				on:click={reset_state}>{$trans('ui.back-home')}</button
 			>
 		{:else if state == 'confirmDowngrade'}
 			<div>
-				{@html trans('ui.downgrade-msg')}
+				{@html $trans('ui.downgrade-msg')}
 			</div>
 			<div class="flex flex-row gap-2 items-center justify-center">
 				<input
@@ -283,29 +283,29 @@
 					bind:checked={confirmDowngrade}
 					id="confirm-downgrade"
 				/>
-				<label for="confirm-downgrade">{trans('ui.confirm-downgrade')}</label>
+				<label for="confirm-downgrade">{$trans('ui.confirm-downgrade')}</label>
 			</div>
 			<button
 				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
-				on:click={() => (state = 'preInstall')}>{trans('ui.downgrade-cancel')}</button
+				on:click={() => (state = 'preInstall')}>{$trans('ui.downgrade-cancel')}</button
 			>
 			<button
 				class="rounded-full bg-red text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
 				on:click={installPack}
-				disabled={!confirmDowngrade}>{trans('ui.downgrade-continue')}</button
+				disabled={!confirmDowngrade}>{$trans('ui.downgrade-continue')}</button
 			>
 		{:else if state == 'noLauncher'}
 			<div>
-				{trans('ui.no-launcher')}
+				{$trans('ui.no-launcher')}
 			</div>
 			<button
 				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
-				on:click={() => (state = 'preInstall')}>{trans('ui.no-launcher-back')}</button
+				on:click={() => (state = 'preInstall')}>{$trans('ui.no-launcher-back')}</button
 			>
 			<button
 				class="rounded-full bg-blue text-base disabled:bg-surface0 py-2 px-4 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue disabled:text-overlay0"
 				on:click={installPack}
-				disabled={versions == undefined}>{trans('ui.no-launcher-continue')}</button
+				disabled={versions == undefined}>{$trans('ui.no-launcher-continue')}</button
 			>
 		{/if}
 	</div>

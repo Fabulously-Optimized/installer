@@ -1,3 +1,4 @@
+import { writable, derived } from 'svelte/store';
 import { langs } from './lang';
 
 function determineLocale(locale: string): string {
@@ -8,10 +9,12 @@ function determineLocale(locale: string): string {
 	}
 }
 
-const locale = determineLocale(navigator.language);
+export const locale = writable(determineLocale(navigator.language));
 const defaultLocale = 'en';
 
-export function trans(id: string, data?: Record<string, string | number | undefined>) {
+export const trans = derived(locale, ($locale) => (id: string, data?: Record<string, string | number | undefined>) => transInternal($locale, id, data));
+
+function transInternal(locale: string, id: string, data?: Record<string, string | number | undefined>) {
 	if (locale && langs[locale] && langs[locale][id]) {
 		let text = langs[locale][id];
 		for (const key in data) {
