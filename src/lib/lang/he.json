@@ -5,7 +5,7 @@
 	"progress.download_file": "מוריד {{file}} ({{idx}}/{{total}})",
 	"progress.extract_overrides": "מחלץ קבצי הגדרות",
 	"progress.install_loader": "מתקין טוען מודים",
-	"progress.add_profile": "יוצר התקנת משגר",
+	"progress.add_profile": "יוצר התקנת מפעיל",
 	"ui.loading-versions": "טוען גרסאות...",
 	"ui.version-tooltip": "מתקין וונילה מאפשר התקנה קלה של כל הגרסאות הנתמכות של Fabulously Optimized. עבור גרסאות מיושנות, השתמש במפעיל או בשיטת התקנה אחרת.",
 	"ui.isolate-profile": "האם להשתמש בתיקיית <code class=\"inline-code\">.minecraft</code> אחרת עבור גרסה זו?",
@@ -20,7 +20,7 @@
 	"ui.downgrade-cancel": "חזור",
 	"ui.downgrade-continue": "המשך",
 	"ui.confirm-exit": "Fabulously Optimized עדיין מתקינה. אתה בטוח שאתה רוצה לצאת?",
-	"ui.no-launcher": "המתקין לא הצליח לזהות את משגר Minecraft הרשמי. התקן את המשגר או הפעל אותו פעם אחת כדי להמשיך.",
+	"ui.no-launcher": "המתקין לא הצליח לזהות את המפעיל Minecraft הרשמי. התקן את המשגר או הפעל אותו פעם אחת כדי להמשיך.",
 	"ui.no-launcher-back": "חזור",
 	"ui.no-launcher-continue": "המשך",
 	"ui.back-home": "חזור לעמוד הראשי"
