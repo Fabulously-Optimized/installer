@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
       # maybe update to macOS 14 if this is ARM64-ready?
-        platform: [macos-13, ubuntu-22.04, windows-2022]
+        platform: [macos-13, ubuntu-20.04, windows-2022]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -30,7 +30,7 @@ jobs:
       - name: Deploy Rust to CI
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies (Ubuntu only)
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-20.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
@@ -43,13 +43,13 @@ jobs:
           RUSTC_WRAPPER: "sccache"
       - name: Upload the Linux packages (AppImage)
         uses: actions/upload-artifact@v4
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-20.04'
         with:
           name: linux-packages
           path: src-tauri/target/release/bundle/appimage/*.AppImage
       - name: Upload the Linux packages (ELF)
         uses: actions/upload-artifact@v4
-        if: matrix.platform == 'ubuntu-22.04'
+        if: matrix.platform == 'ubuntu-20.04'
         with:
           name: linux-packages-raw
           # TODO: a better way to find just the binary
