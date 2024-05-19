@@ -5,18 +5,18 @@
 
 use std::{
     io::{Cursor, Read},
-    path::{Path, PathBuf},
+    mem::ManuallyDrop,
+    path::{Component, Path, PathBuf},
 };
 
 use anyhow::{anyhow, Context};
 use mrpack::PackDependency;
+use reqwest::StatusCode;
 use sha2::Digest;
-use tauri::{
-    api::http::{ClientBuilder, HttpRequestBuilder, ResponseType},
-    http::status::StatusCode,
-    Manager,
-};
-use zip::ZipArchive;
+use tauri::Manager;
+use tokio::{fs::File, io::AsyncWriteExt};
+
+mod config;
 
 fn main() {
     tauri::Builder::default()
@@ -28,6 +28,26 @@ fn main() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+struct SelfCleanupFile<'a>(ManuallyDrop<File>, &'a Path);
+
+impl<'a> SelfCleanupFile<'a> {
+    async fn new(path: &'a Path) -> tokio::io::Result<Self> {
+        Ok(Self(ManuallyDrop::new(File::create(path).await?), path))
+    }
+
+    fn finalize(mut self) {
+        unsafe { ManuallyDrop::drop(&mut self.0) };
+        std::mem::forget(self);
+    }
+}
+
+impl Drop for SelfCleanupFile<'_> {
+    fn drop(&mut self) {
+        unsafe { ManuallyDrop::drop(&mut self.0) };
+        _ = std::fs::remove_file(self.1);
+    }
 }
 
 mod mrpack;
@@ -93,13 +113,20 @@ async fn get_launcher_path() -> anyhow::Result<PathBuf> {
 
 async fn install_fabriclike(
     app_handle: &tauri::AppHandle,
-    client: &tauri::api::http::Client,
+    client: &reqwest::Client,
     profile_url: String,
     profile_name: &str,
 ) -> anyhow::Result<()> {
-    let profile_json = client
-        .send(HttpRequestBuilder::new("GET", profile_url)?
-        .response_type(ResponseType::Text).header("User-Agent", format!("Paigaldaja/{} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)", app_handle.package_info().version))?)
+    let mut profile_json = client
+        .get(profile_url)
+        .header(
+            "User-Agent",
+            format!(
+                "Paigaldaja/{} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)",
+                app_handle.package_info().version
+            ),
+        )
+        .send()
         .await?;
     if profile_json.status() != StatusCode::OK {
         return Err(anyhow!("Metadata server did not respond with 200"));
@@ -111,11 +138,11 @@ async fn install_fabriclike(
     if !profile_dir.is_dir() {
         tokio::fs::create_dir_all(&profile_dir).await?;
     }
-    tokio::fs::write(
-        &profile_json_path,
-        profile_json.read().await?.data.as_str().unwrap(),
-    )
-    .await?;
+    let mut profile_json_file = SelfCleanupFile::new(&profile_json_path).await?;
+    while let Some(chunk) = profile_json.chunk().await? {
+        profile_json_file.0.write_all(&chunk).await?;
+    }
+    profile_json_file.finalize();
     if profile_jar_path.is_file() {
         tokio::fs::remove_file(&profile_jar_path).await?;
     }
@@ -224,39 +251,92 @@ async fn canonicalize_profile_path(profile_dir: &Option<String>) -> anyhow::Resu
 
 async fn try_download(
     app_handle: &tauri::AppHandle,
-    client: &tauri::api::http::Client,
+    client: &reqwest::Client,
     url: &str,
-    path: &str,
+    path: &Path,
     expected_hash: &[u8],
-    profile_base_path: &Path,
+    expected_size: usize,
 ) -> anyhow::Result<()> {
-    let request = HttpRequestBuilder::new("GET", url)?
-        .response_type(ResponseType::Binary)
+    let mut url = reqwest::Url::parse(url).context("Invalid download URL!")?;
+    let host = url
+        .host_str()
+        .ok_or(anyhow!("Download URL doesn't have a host?"))?;
+    if !config::DOWNLOADS_DOMAIN_WHITELIST.contains(&host) {
+        return Err(anyhow!("Domain not allowed for download: {}", host));
+    }
+    if url.scheme() == "http" {
+        url.set_scheme("https")
+            .map_err(|()| anyhow!("Failed to upgrade HTTP to HTTPS!"))?;
+    }
+    if url.scheme() != "https" {
+        return Err(anyhow!(
+            "Weird scheme, possibly malicious: {}",
+            url.scheme()
+        ));
+    }
+    let mut resp = client
+        .get(url)
         .header(
             "User-Agent",
             format!(
                 "Paigaldaja/{} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)",
                 app_handle.package_info().version
             ),
-        )?;
-    let resp = client.send(request).await?;
+        )
+        .send()
+        .await?;
     if resp.status() != StatusCode::OK {
         return Err(anyhow!("Status code was not 200, but {}", resp.status()));
     }
-    let blob = resp.bytes().await?;
-    let hash = std::convert::Into::<[u8; 64]>::into(sha2::Sha512::digest(&blob.data));
-    if &hash != expected_hash {
+    let mut size = 0usize;
+    let mut hasher = sha2::Sha512::new();
+    let mut file = SelfCleanupFile::new(path).await?;
+    while let Some(chunk) = resp.chunk().await? {
+        size += chunk.len();
+        if size > expected_size {
+            return Err(anyhow!(
+                "File is bigger than expected: expected {} bytes, aborting on {} bytes",
+                expected_size,
+                size
+            ));
+        }
+        hasher.update(&chunk);
+        file.0.write_all(&chunk).await?;
+    }
+    if size < expected_size {
+        return Err(anyhow!(
+            "File is smaller than expected: expected {} bytes, got {} bytes",
+            expected_size,
+            size
+        ));
+    }
+    let hash: [u8; 64] = hasher.finalize().into();
+    if hash != expected_hash {
         return Err(anyhow!(
             "Wrong hash: got {}, expected {}",
             hex::encode(hash),
             hex::encode(expected_hash)
         ));
     }
-    if let Some(parent) = PathBuf::from(path).parent() {
-        tokio::fs::create_dir_all(profile_base_path.join(parent)).await?;
-    }
-    tokio::fs::write(profile_base_path.join(PathBuf::from(&path)), blob.data).await?;
+    file.finalize();
     Ok(())
+}
+
+fn parse_and_sanitize_path(path: &str) -> Option<&Path> {
+    if path.contains('\0') {
+        return None;
+    }
+    let path = Path::new(path);
+    let mut depth = 0usize;
+    for component in path.components() {
+        match component {
+            Component::Prefix(_) | Component::RootDir => return None,
+            Component::ParentDir => depth = depth.checked_sub(1)?,
+            Component::Normal(_) => depth += 1,
+            Component::CurDir => (),
+        }
+    }
+    Some(path)
 }
 
 async fn install_mrpack_inner(
@@ -281,10 +361,26 @@ async fn install_mrpack_inner(
     let _ = app_handle.emit_all("install:progress", ("clean_old", "complete"));
     let _ = app_handle.emit_all("install:progress", ("load_pack", "start"));
     let mut written_files = vec![];
-    let client = ClientBuilder::new().build().unwrap();
-    let request = HttpRequestBuilder::new("GET", url)
-        .context("Is the .mrpack URL invalid?")?
-        .response_type(ResponseType::Binary)
+    let mut url = reqwest::Url::parse(&url).context("Invalid modpack URL!")?;
+    let host = url
+        .host_str()
+        .ok_or(anyhow!("Modpack URL doesn't have a host?"))?;
+    if !config::PACK_DOMAIN_WHITELIST.contains(&host) {
+        return Err(anyhow!("Domain not allowed for pack download: {}", host));
+    }
+    if url.scheme() == "http" {
+        url.set_scheme("https")
+            .map_err(|()| anyhow!("Failed to upgrade HTTP to HTTPS!"))?;
+    }
+    if url.scheme() != "https" {
+        return Err(anyhow!(
+            "Weird scheme, possibly malicious: {}",
+            url.scheme()
+        ));
+    }
+    let client = reqwest::Client::new();
+    let response = client
+        .get(url)
         .header(
             "User-Agent",
             format!(
@@ -292,9 +388,7 @@ async fn install_mrpack_inner(
                 app_handle.package_info().version
             ),
         )
-        .context("Could not set request metadata")?;
-    let response = client
-        .send(request)
+        .send()
         .await
         .context("Failed to fetch modpack data")?;
     if response.status() != StatusCode::OK {
@@ -303,8 +397,7 @@ async fn install_mrpack_inner(
     let bytes = response
         .bytes()
         .await
-        .context("Failed to fetch modpack data")?
-        .data;
+        .context("Failed to fetch modpack data")?;
     let mut mrpack =
         zip::ZipArchive::new(Cursor::new(bytes)).context("Failed to parse modpack file")?;
     let index: mrpack::PackIndex = serde_json::from_reader(
@@ -329,6 +422,9 @@ async fn install_mrpack_inner(
             "install:progress",
             ("download_file", "start", i, &file.path),
         );
+        let path = parse_and_sanitize_path(&file.path)
+            .ok_or(anyhow!("Possibly malicious download path: {}", file.path))?;
+        let path = profile_base_path.join(path);
         if let Some(env) = file.env {
             if let Some(&mrpack::SideType::Unsupported) = env.get(&mrpack::EnvType::Client) {
                 continue;
@@ -342,25 +438,38 @@ async fn install_mrpack_inner(
                     file.path
                 ))?,
         )?;
+        if let Some(parent) = path.parent() {
+            tokio::fs::create_dir_all(profile_base_path.join(parent)).await?;
+        }
         let mut success = false;
+        let mut last_err = None;
         for url in file.downloads {
-            if let Ok(()) = try_download(
+            match try_download(
                 &app_handle,
                 &client,
                 &url,
-                &file.path,
+                &path,
                 &hash,
-                &profile_base_path,
+                file.file_size as usize,
             )
             .await
             {
-                written_files.push(PathBuf::from(&file.path));
-                success = true;
-                break;
+                Ok(()) => {
+                    written_files.push(path.to_owned());
+                    success = true;
+                    break;
+                }
+                Err(e) => {
+                    last_err.replace(e);
+                }
             }
         }
         if !success {
-            return Err(anyhow!("Download failed for {}", file.path));
+            return Err(anyhow!(
+                "Download failed for {}: {}",
+                file.path,
+                last_err.unwrap()
+            ));
         }
         let _ = app_handle.emit_all(
             "install:progress",
@@ -369,61 +478,60 @@ async fn install_mrpack_inner(
     }
     let _ = app_handle.emit_all("install:progress", ("download_files", "complete"));
     let _ = app_handle.emit_all("install:progress", ("extract_overrides", "start"));
+
     for filename in mrpack
         .file_names()
         .map(|e| e.to_string())
         .collect::<Vec<_>>()
     {
-        // This is overly complex and only used once
-        // But is required to work around rust-lang/rust#63768
-        fn complex_helper_function<T>(
-            archive: &mut ZipArchive<T>,
-            filename: &str,
-        ) -> anyhow::Result<Option<(PathBuf, Vec<u8>)>>
-        where
-            T: std::io::Read,
-            T: std::io::Seek,
+        if filename.starts_with("overrides")
+            && mrpack.by_name(&format!("client-{filename}")).is_ok()
         {
-            if filename.starts_with("overrides")
-                && archive.by_name(&("client-".to_string() + filename)).is_ok()
-            {
-                return Ok(None);
-            }
-            let mut file = archive.by_name(filename)?;
-            if file.is_file() {
-                if let Ok(path) = file.mangled_name().strip_prefix("overrides") {
-                    let mut buf: Vec<u8> = vec![];
-                    file.read_to_end(&mut buf)?;
-                    return Ok(Some((path.to_owned(), buf)));
-                } else if let Ok(path) = file.mangled_name().strip_prefix("client-overrides") {
-                    let mut buf: Vec<u8> = vec![];
-                    file.read_to_end(&mut buf)?;
-                    return Ok(Some((path.to_owned(), buf)));
-                }
-            }
-            Ok(None)
+            continue;
         }
-        if let Some((rel_path, buf)) = complex_helper_function(&mut mrpack, &filename)
-            .context("Failed to read configuration file; corrupted mrpack?")?
+        let mut buf: Vec<u8>;
+        let path: PathBuf;
         {
-            let path = profile_base_path.join(&rel_path);
-            if let Some(parent) = path.parent() {
-                tokio::fs::create_dir_all(parent).await.with_context(|| {
-                    format!(
-                        "Failed to create directories for configuration file {}",
-                        rel_path.to_string_lossy()
-                    )
-                })?;
+            let mut file = mrpack
+                .by_name(&filename)
+                .context("Failed to read configuration file; corrupted mrpack?")?;
+            if file.is_dir() {
+                continue;
             }
-            tokio::fs::write(&path, buf).await.with_context(|| {
+            let path_ref = file
+                .enclosed_name()
+                .ok_or(anyhow!("Possibly malicious config path: {}", file.name()))?;
+            path = if let Ok(path) = path_ref
+                .strip_prefix("overrides")
+                .or_else(|_| path_ref.strip_prefix("client-overrides"))
+                .map(Path::to_owned)
+            {
+                path
+            } else {
+                continue;
+            };
+            buf = vec![];
+            file.read_to_end(&mut buf)
+                .context("Failed to read configuration file; corrupted mrpack?")?;
+        }
+        let abs_path = profile_base_path.join(&path);
+        if let Some(parent) = abs_path.parent() {
+            tokio::fs::create_dir_all(parent).await.with_context(|| {
                 format!(
-                    "Failed to write configuration file {}",
-                    rel_path.to_string_lossy()
+                    "Failed to create directories for configuration file at {}",
+                    path.to_string_lossy()
                 )
             })?;
-            written_files.push(rel_path);
         }
+        tokio::fs::write(&abs_path, &buf).await.with_context(|| {
+            format!(
+                "Failed to write configuration file at {}",
+                abs_path.to_string_lossy()
+            )
+        })?;
+        written_files.push(path);
     }
+
     let _ = app_handle.emit_all("install:progress", ("extract_overrides", "complete"));
     let _ = app_handle.emit_all("install:progress", ("install_loader", "start"));
     if index.dependencies.contains_key(&PackDependency::Forge) {
