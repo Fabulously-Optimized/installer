@@ -16,6 +16,7 @@
 	"devDependencies": {
 		"@catppuccin/tailwindcss": "^0.1.6",
 		"@fluentui/svg-icons": "^1.1.227",
+		"@rgossiaux/svelte-headlessui": "^2.0.0",
 		"@sveltejs/adapter-static": "^2.0.3",
 		"@sveltejs/kit": "^1.30.3",
 		"@tailwindcss/forms": "^0.5.7",
@@ -42,7 +43,6 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@tauri-apps/api": "^1.5.3",
-		"semver": "^7.6.0"
+		"@tauri-apps/api": "^1.5.3"
 	}
 }

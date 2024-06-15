@@ -3,18 +3,39 @@ import { langs } from './lang';
 
 function determineLocale(locale: string): string {
 	if (langs[locale.toLowerCase()] != undefined) {
-		return locale.toLowerCase()
+		return locale.toLowerCase();
 	} else {
-		return locale.toLowerCase().split('-')[0]
+		return locale.toLowerCase().split('-')[0];
 	}
 }
 
 export const locale = writable(determineLocale(navigator.language));
 const defaultLocale = 'en';
 
-export const trans = derived(locale, ($locale) => (id: string, data?: Record<string, string | number | undefined>) => transInternal($locale, id, data));
+export const trans = derived(
+	locale,
+	($locale) => (id: string, data?: Record<string, string | number | undefined>) =>
+		transInternal($locale, id, data)
+);
 
-function transInternal(locale: string, id: string, data?: Record<string, string | number | undefined>) {
+export const langIds: string[] = [];
+for (const key in langs) {
+	if (Object.prototype.hasOwnProperty.call(langs, key)) {
+		langIds.push(key);
+	}
+}
+export function langName(locale: string) {
+	if (locale && langs[locale] && langs[locale]['name']) {
+		return langs[locale]['name'];
+	}
+	return locale;
+}
+
+function transInternal(
+	locale: string,
+	id: string,
+	data?: Record<string, string | number | undefined>
+) {
 	if (locale && langs[locale] && langs[locale][id]) {
 		let text = langs[locale][id];
 		for (const key in data) {

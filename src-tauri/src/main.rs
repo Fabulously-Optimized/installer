@@ -2,6 +2,7 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+#![allow(clippy::too_many_arguments)]
 
 use std::{
     io::{Cursor, Read},
@@ -11,9 +12,10 @@ use std::{
 
 use anyhow::{anyhow, Context};
 use mrpack::PackDependency;
-use reqwest::StatusCode;
+use reqwest::{StatusCode, Url};
 use sha2::Digest;
-use tauri::Manager;
+use tauri::{api::process::Command, Manager};
+use tempfile::tempdir;
 use tokio::{fs::File, io::AsyncWriteExt};
 
 mod config;
@@ -223,6 +225,7 @@ async fn install_mrpack(
     pack_name: String,
     profile_dir: Option<String>,
     extra_metadata: serde_json::Value,
+    cosign_bundle_url: String,
 ) -> Result<(), String> {
     install_mrpack_inner(
         app_handle,
@@ -232,6 +235,7 @@ async fn install_mrpack(
         pack_name,
         profile_dir,
         extra_metadata,
+        cosign_bundle_url,
     )
     .await
     .map_err(|e| format!("{e:#}"))
@@ -249,20 +253,11 @@ async fn canonicalize_profile_path(profile_dir: &Option<String>) -> anyhow::Resu
     })
 }
 
-async fn try_download(
-    app_handle: &tauri::AppHandle,
-    client: &reqwest::Client,
-    url: &str,
-    path: &Path,
-    expected_hash: &[u8],
-    expected_size: usize,
-) -> anyhow::Result<()> {
-    let mut url = reqwest::Url::parse(url).context("Invalid download URL!")?;
-    let host = url
-        .host_str()
-        .ok_or(anyhow!("Download URL doesn't have a host?"))?;
-    if !config::DOWNLOADS_DOMAIN_WHITELIST.contains(&host) {
-        return Err(anyhow!("Domain not allowed for download: {}", host));
+fn revalidate_url(url: &str, whitelist: &[&str]) -> anyhow::Result<Url> {
+    let mut url = reqwest::Url::parse(url).context("Invalid URL!")?;
+    let host = url.host_str().ok_or(anyhow!("URL doesn't have a host?"))?;
+    if !whitelist.contains(&host) {
+        return Err(anyhow!("Domain not allowed here: {}", host));
     }
     if url.scheme() == "http" {
         url.set_scheme("https")
@@ -274,6 +269,18 @@ async fn try_download(
             url.scheme()
         ));
     }
+    Ok(url)
+}
+
+async fn try_download(
+    app_handle: &tauri::AppHandle,
+    client: &reqwest::Client,
+    url: &str,
+    path: &Path,
+    expected_hash: &[u8],
+    expected_size: usize,
+) -> anyhow::Result<()> {
+    let url = revalidate_url(url, config::DOWNLOADS_DOMAIN_WHITELIST)?;
     let mut resp = client
         .get(url)
         .header(
@@ -347,6 +354,7 @@ async fn install_mrpack_inner(
     pack_name: String,
     profile_dir: Option<String>,
     extra_metadata: serde_json::Value,
+    cosign_bundle_url: String,
 ) -> anyhow::Result<()> {
     let profile_base_path = canonicalize_profile_path(&profile_dir)
         .await
@@ -361,23 +369,7 @@ async fn install_mrpack_inner(
     let _ = app_handle.emit_all("install:progress", ("clean_old", "complete"));
     let _ = app_handle.emit_all("install:progress", ("load_pack", "start"));
     let mut written_files = vec![];
-    let mut url = reqwest::Url::parse(&url).context("Invalid modpack URL!")?;
-    let host = url
-        .host_str()
-        .ok_or(anyhow!("Modpack URL doesn't have a host?"))?;
-    if !config::PACK_DOMAIN_WHITELIST.contains(&host) {
-        return Err(anyhow!("Domain not allowed for pack download: {}", host));
-    }
-    if url.scheme() == "http" {
-        url.set_scheme("https")
-            .map_err(|()| anyhow!("Failed to upgrade HTTP to HTTPS!"))?;
-    }
-    if url.scheme() != "https" {
-        return Err(anyhow!(
-            "Weird scheme, possibly malicious: {}",
-            url.scheme()
-        ));
-    }
+    let url = revalidate_url(&url, config::PACK_DOMAIN_WHITELIST)?;
     let client = reqwest::Client::new();
     let response = client
         .get(url)
@@ -398,6 +390,58 @@ async fn install_mrpack_inner(
         .bytes()
         .await
         .context("Failed to fetch modpack data")?;
+
+    let sig_response = client
+        .get(revalidate_url(
+            &cosign_bundle_url,
+            config::PACK_DOMAIN_WHITELIST,
+        )?)
+        .header(
+            "User-Agent",
+            format!(
+                "Paigaldaja/{} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)",
+                app_handle.package_info().version
+            ),
+        )
+        .send()
+        .await
+        .context("Failed to fetch modpack signature")?;
+    if sig_response.status() != StatusCode::OK {
+        return Err(anyhow!("Server did not respond with 200"));
+    }
+    let sig_bytes = sig_response
+        .bytes()
+        .await
+        .context("Failed to fetch modpack signature")?;
+    let mut cosign_bundle = zip::ZipArchive::new(Cursor::new(sig_bytes))
+        .context("Failed to parse modpack signature")?;
+    let mut buf = vec![];
+    let tempdir = tempdir().context("Couldn't acquire a temporary directory!")?;
+    {
+        let mut cosign_bundle = cosign_bundle
+            .by_name("cosign-bundle.json")
+            .context("Couldn't find signature in signature bundle!")?;
+        cosign_bundle
+            .read_to_end(&mut buf)
+            .context("Couldn't read signature bundle!")?;
+    }
+    let bundle_path = tempdir.path().join("cosign-bundle.json");
+    tokio::fs::write(&bundle_path, buf)
+        .await
+        .context("Couldn't read signature bundle!")?;
+    let hash: [u8; 32] = sha2::Sha256::digest(&bytes).into();
+    let hash = hex::encode(hash);
+    if !Command::new_sidecar("verifier")
+        .context("Couldn't verify signature!")?
+        .args([&hash, bundle_path.to_string_lossy().as_ref()])
+        .status()
+        .context("Couldn't verify signature!")?
+        .success()
+    {
+        return Err(anyhow!("Couldn't verify signature!"));
+    }
+    _ = tempdir.close();
+
     let mut mrpack =
         zip::ZipArchive::new(Cursor::new(bytes)).context("Failed to parse modpack file")?;
     let index: mrpack::PackIndex = serde_json::from_reader(

@@ -1,4 +1,5 @@
 {
+	"name": "English",
 	"progress.clean_old": "Cleaning up old files",
 	"progress.load_pack": "Downloading modpack",
 	"progress.download_files": "Downloading mods",

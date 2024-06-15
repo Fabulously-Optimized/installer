@@ -17,6 +17,7 @@ export interface Version {
 export interface VersionFile {
 	url: string;
 	primary: boolean;
+	filename: string;
 }
 
 export async function get_project(id: string): Promise<Project> {

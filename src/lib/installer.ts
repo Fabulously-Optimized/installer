@@ -13,7 +13,8 @@ export async function install_mrpack(
 	icon: Blob | undefined,
 	pack_name: string,
 	profile_dir: string | undefined,
-	extra_metadata: unknown
+	extra_metadata: unknown,
+	cosign_bundle_url: string
 ): Promise<void> {
 	await invoke('install_mrpack', {
 		url: url,
@@ -21,7 +22,8 @@ export async function install_mrpack(
 		icon: icon != undefined ? await blobToDataURL(icon) : undefined,
 		packName: pack_name,
 		profileDir: profile_dir,
-		extraMetadata: extra_metadata
+		extraMetadata: extra_metadata,
+		cosignBundleUrl: cosign_bundle_url
 	});
 }
 

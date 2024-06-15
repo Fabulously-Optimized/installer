@@ -6,19 +6,28 @@
 		show_profile_dir_selector
 	} from '$lib/installer';
 	import { get_project, list_versions, type Version } from '$lib/modrinth';
-	import { trans } from '$lib/i18n';
+	import { trans, locale, langIds, langName } from '$lib/i18n';
 	import { listen } from '@tauri-apps/api/event';
 	import { appWindow } from '@tauri-apps/api/window';
 	import { confirm } from '@tauri-apps/api/dialog';
 	import { open } from '@tauri-apps/api/shell';
-	import semver from 'semver';
+	import flexver_compare from '$lib/flexver';
 	import LightThemeIcon from '@fluentui/svg-icons/icons/weather_sunny_24_regular.svg?raw';
 	import DarkThemeIcon from '@fluentui/svg-icons/icons/dark_theme_24_regular.svg?raw';
 	import DeviceThemeIcon from '@fluentui/svg-icons/icons/laptop_24_regular.svg?raw';
+	import TranslateIcon from '@fluentui/svg-icons/icons/local_language_24_regular.svg?raw';
 	import HelpIcon from '@fluentui/svg-icons/icons/question_circle_32_regular.svg?raw';
 	import FolderIcon from '@fluentui/svg-icons/icons/folder_32_regular.svg?raw';
+	import {
+		Listbox,
+		ListboxButton,
+		ListboxOptions,
+		ListboxOption
+	} from '@rgossiaux/svelte-headlessui';
+
 	const PROJECT_ID = '1KVo5zza';
 	let totalMods = Infinity;
+
 	listen('install:progress', (event) => {
 		console.log(event.payload);
 		const payload = event.payload as (string | number)[];
@@ -78,6 +87,7 @@
 		try {
 			const version = versions!.find((e) => e.id == selected)!;
 			const url = version!.files.find((e) => e.primary)!.url;
+			const cosign_bundle_url = version!.files.find((e) => e.filename == 'cosign-bundle.zip')!.url;
 			const mc_version = version?.game_versions[0];
 			const profile_dir =
 				profileDirectory != ''
@@ -93,7 +103,7 @@
 						typeof installed_metadata.mc_version == 'string'
 					) {
 						const installed_mc_version = installed_metadata.mc_version;
-						if (semver.lt(mc_version, installed_mc_version)) {
+						if (flexver_compare(mc_version, installed_mc_version) < 0) {
 							state = 'confirmDowngrade';
 							confirmDowngrade = false;
 							removeEventListener('beforeunload', confirmUnload);
@@ -118,7 +128,8 @@
 						version_number: version.version_number
 					},
 					mc_version: mc_version
-				}
+				},
+				cosign_bundle_url
 			);
 			state = 'postInstall';
 		} catch (e) {
@@ -134,10 +145,16 @@
 	let selected: string;
 	let isolateProfile = false;
 	list_versions(PROJECT_ID).then((result) => {
-		const featured_versions = result.filter((e) => e.featured);
+		const featured_versions = result
+			.filter((e) => e.featured)
+			.filter((e) => e.files.find((e) => e.filename == 'cosign-bundle.zip'));
 		const release_versions = featured_versions.filter((e) => e.version_type == 'release');
 		versions = featured_versions;
-		selected = release_versions[0].id;
+		if (release_versions.length > 0) {
+			selected = release_versions[0].id;
+		} else {
+			selected = featured_versions[0].id;
+		}
 	});
 	let state:
 		| 'preInstall'
@@ -189,12 +206,25 @@
 	let profileDirectory = '';
 </script>
 
-<button
-	class="absolute top-0 right-0 bg-surface0 rounded-lg m-4 p-2 fill-text shadow-lg"
-	on:click={cycle_theme}
->
-	{@html theme_icon_map[theme]}
-</button>
+<div class="absolute top-0 start-0 m-4 fill-text flex flex-row">
+	<button class="p-2 hover:bg-surface0 rounded" on:click={cycle_theme}>
+		{@html theme_icon_map[theme]}
+	</button>
+	<Listbox bind:value={$locale}>
+		<ListboxButton class="p-2 hover:bg-surface0 rounded">{@html TranslateIcon}</ListboxButton>
+		<div class="relative">
+			<ListboxOptions
+				class="absolute top-1 bg-surface0 rounded shadow-lg text-text flex flex-col max-h-[70vh] overflow-scroll"
+			>
+				{#each langIds as lang}
+					<ListboxOption value={lang} class="p-2 pe-6 hover:bg-surface1 rounded text-nowrap"
+						>{langName(lang)}</ListboxOption
+					>
+				{/each}
+			</ListboxOptions>
+		</div>
+	</Listbox>
+</div>
 
 <div class="flex items-center justify-center w-full h-full bg-base text-text">
 	<div class="flex flex-col gap-4 max-w-md">
