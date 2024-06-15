@@ -1,0 +1,4 @@
+github.com/sigstore/sigstore v1.8.4 h1:g4ICNpiENFnWxjmBzBDWUn62rNFeny/P77HUC8da32w=
+github.com/sigstore/sigstore v1.8.4/go.mod h1:1jIKtkTFEeISen7en+ZPWdDHazqhxco/+v9CNjc7oNg=
+github.com/sigstore/sigstore-go v0.4.0 h1:0BxofjPnd+1LzyiCgsFP0NviMg8l20ZMf4aitkvYEU8=
+github.com/sigstore/sigstore-go v0.4.0/go.mod h1:KZQFwvDItf1sr5P8YhVIjjXBe1ZyeFuC4odn7/2Uie0=

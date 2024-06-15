@@ -1,4 +1,5 @@
 {
+	"name": "한국어",
 	"progress.clean_old": "오래된 파일을 정리하는 중",
 	"progress.load_pack": "모드팩을 다운로드하는 중",
 	"progress.download_files": "모드를 다운로드하는 중",
