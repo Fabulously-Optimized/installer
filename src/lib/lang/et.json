@@ -1,4 +1,5 @@
 {
+	"name": "Eesti keel",
 	"progress.clean_old": "Vanade failide tühjendamine",
 	"progress.load_pack": "Modipaki allalaadimine",
 	"progress.download_files": "Modide allalaadimine",
