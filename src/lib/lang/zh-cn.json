@@ -1,4 +1,5 @@
 {
+	"name": "简体中文",
 	"progress.clean_old": "清理旧文件",
 	"progress.load_pack": "正在下载模组包",
 	"progress.download_files": "正在下载模组",
