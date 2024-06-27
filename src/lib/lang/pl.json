@@ -8,7 +8,7 @@
 	"progress.install_loader": "Instalacja programu ładującego mody",
 	"progress.add_profile": "Tworzenie instalacji launchera",
 	"ui.loading-versions": "Ładowanie wersji...",
-	"ui.version-tooltip": "Vanilla Instalator umożliwia łatwą instalację wszystkich obsługiwanych wersji Fabulously Optimized. W przypadku nieaktualnych wersji należy użyć innego programu uruchamiającego lub metody instalacji.",
+	"ui.version-tooltip": "Instalator Fabulously Optimized umożliwia łatwą instalację wszystkich obsługiwanych wersji Fabulously Optimized. W przypadku nieaktualnych wersji należy użyć innego programu uruchamiającego lub metody instalacji.",
 	"ui.isolate-profile": "Użyć innego folderu <code class=\"inline-code\">.minecraft</code> dla tej wersji?",
 	"ui.profile-dir-placeholder": "Pozostaw puste, aby umożliwić instalatorowi podjęcie decyzji",
 	"ui.profile-dir-browse-label": "Przeglądaj foldery",
