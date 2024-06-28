@@ -1,0 +1,55 @@
+name: 'Build'
+on:
+  release:
+  workflow_dispatch:
+
+jobs:
+  build-signed:
+    permissions:
+      contents: write
+    runs-on: windows-2022
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Install Go
+        uses: actions/setup-go@v5
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: latest
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Deploy Rust to CI
+        uses: dtolnay/rust-toolchain@stable
+      - name: Deploy frontend dependencies
+        run: pnpm install
+      - name: Build Verifier
+        run: |
+          pushd verifier
+          go build -o "dist/verifier-x86_64-pc-windows-msvc.exe"
+          popd
+      - name: Compile software
+        run: pnpm tauri build --ci
+      - name: Upload the unsigned Windows packages
+        id: upload-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-packages-unsigned
+          path: src-tauri/target/release/*.exe
+      - name: Submit Signing Request
+        uses: signpath/github-action-submit-signing-request@v0.4
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '903dc541-2740-462e-b9dd-659adaf2188e'
+          project-slug: 'installer'
+          signing-policy-slug: 'test-signing'
+          github-artifact-id: '${{steps.upload-unsigned.outputs.artifact-id}}'
+          wait-for-completion: true
+          output-artifact-directory: 'signed-artifacts'
+      - name: Upload the signed Windows packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-packages-signed
+          path: signed-artifacts/*.exe
