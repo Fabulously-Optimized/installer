@@ -37,7 +37,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-packages-unsigned
-          path: src-tauri/target/release/*.exe
+          path: src-tauri/target/release/Fabulously Optimized Installer.exe
       - name: Submit Signing Request
         uses: signpath/github-action-submit-signing-request@v0.4
         with:
