@@ -8,7 +8,7 @@
 	"progress.install_loader": "正在安装模组加载器",
 	"progress.add_profile": "正在创建启动器安装程序",
 	"ui.loading-versions": "正在加载版本…",
-	"ui.version-tooltip": "官方安装程序可轻松安装Fabulously Optimized的所有受支持版本。对于已经过时的版本，请使用不同的启动器或安装方法。",
+	"ui.version-tooltip": "Fabulously Optimized安装程序可轻松安装Fabulously Optimized的所有受支持版本。对于已经过时的版本，请使用不同的启动器或安装方法。",
 	"ui.isolate-profile": "对此版本使用不同的<code class=\"inline-code\">.minecraft</code>文件夹？",
 	"ui.profile-dir-placeholder": "留空将让安装程序决定",
 	"ui.profile-dir-browse-label": "浏览文件夹",
