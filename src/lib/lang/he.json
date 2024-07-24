@@ -8,7 +8,7 @@
 	"progress.install_loader": "מתקין טוען מודים",
 	"progress.add_profile": "יוצר התקנת מפעיל",
 	"ui.loading-versions": "טוען גרסאות...",
-	"ui.version-tooltip": "מתקין וונילה מאפשר התקנה קלה של כל הגרסאות הנתמכות של Fabulously Optimized. עבור גרסאות מיושנות, השתמש במפעיל או בשיטת התקנה אחרת.",
+	"ui.version-tooltip": "מתקין Fabulously Optimized מאפשר התקנה קלה של כל הגרסאות הנתמכות של Fabulously Optimized. עבור גרסאות מיושנות, השתמש במפעיל אחר או בשיטת התקנה אחרת.",
 	"ui.isolate-profile": "האם להשתמש בתיקיית <code class=\"inline-code\">.minecraft</code> אחרת עבור גרסה זו?",
 	"ui.profile-dir-placeholder": "השאר ריק כדי לאפשר למתקין להחליט",
 	"ui.profile-dir-browse-label": "עיין בתיקיות",
