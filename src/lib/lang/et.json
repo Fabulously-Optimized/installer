@@ -1,4 +1,5 @@
 {
+	"name": "Eesti keel",
 	"progress.clean_old": "Vanade failide tühjendamine",
 	"progress.load_pack": "Modipaki allalaadimine",
 	"progress.download_files": "Modide allalaadimine",
@@ -7,7 +8,7 @@
 	"progress.install_loader": "Modilaaduri paigaldamine",
 	"progress.add_profile": "Launcheri paigalduse loomine",
 	"ui.loading-versions": "Versioonide laadimine...",
-	"ui.version-tooltip": "Vanilla Installer lubab kerget paigaldust kõigi Fabulously Optimized toetatud versioonide jaoks. Aegunud versioonide jaoks kasuta teist käivitajat või meetodit.",
+	"ui.version-tooltip": "Fabulously Optimized Installer lubab kerget paigaldust kõigi Fabulously Optimized toetatud versioonide jaoks. Aegunud versioonide jaoks kasuta teist käivitajat või meetodit.",
 	"ui.isolate-profile": "Kasutad selle versiooni jaoks teist <code class=\"inline-code\">.minecraft</code> kausta?",
 	"ui.profile-dir-placeholder": "Jäta tühjaks, kui soovid et paigaldaja ise valib",
 	"ui.profile-dir-browse-label": "Sirvi kaustu",

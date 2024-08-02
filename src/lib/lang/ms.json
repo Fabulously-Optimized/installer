@@ -1,4 +1,5 @@
 {
+	"name": "Bahasa Melayu",
 	"progress.clean_old": "Sedang membersihkan fail lama",
 	"progress.load_pack": "Sedang memuat turun pek mod",
 	"progress.download_files": "Sedang memuat turun mod",
@@ -7,7 +8,7 @@
 	"progress.install_loader": "Sedang memasang pemuat mod",
 	"progress.add_profile": "Sedang mencipta pemasangan pelancar",
 	"ui.loading-versions": "Sedang memuat versi...",
-	"ui.version-tooltip": "Vanilla Installer membenarkan pemasangan mudah semua versi Fabulously Optimized yang disokong. Untuk versi lapuk, gunakan pelancar atau kaedah pemasangan yang berbeza.",
+	"ui.version-tooltip": "Pemasang Fabulously Optimized membenarkan pemasangan mudah semua versi Fabulously Optimized yang disokong. Untuk versi lapuk, gunakan pelancar atau kaedah pemasangan yang berbeza.",
 	"ui.isolate-profile": "Gunakan direktori <code class=\"inline-code\">.minecraft</code> yang berbeza untuk versi ini?",
 	"ui.profile-dir-placeholder": "Jika dibiar kosong, pemasang akan menentukan",
 	"ui.profile-dir-browse-label": "Semak folder",
@@ -19,7 +20,7 @@
 	"ui.confirm-downgrade": "Ya, saya mahu menuruntarafkan FO.",
 	"ui.downgrade-cancel": "Kembali",
 	"ui.downgrade-continue": "Teruskan",
-	"ui.confirm-exit": "Fabulously Optimized sedang dipasang. Anda pasti untuk keluar?",
+	"ui.confirm-exit": "Fabulously Optimized sedang dipasang. Anda pasti anda mahu keluar?",
 	"ui.no-launcher": "Pemasang tidak dapat mengesan Pelancar Minecraft rasmi. Pasang pelancar tersebut atau lancarkannya sekali untuk meneruskan.",
 	"ui.no-launcher-back": "Kembali",
 	"ui.no-launcher-continue": "Teruskan",
