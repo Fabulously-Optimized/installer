@@ -4,7 +4,7 @@
 	"progress.load_pack": "Downloading tweakpack",
 	"progress.download_files": "Downloading tweaks",
 	"progress.download_file": "Downloading {{file}} ({{idx}}/{{total}})",
-	"progress.extract_overrides": "Withdrawing setup threads",
+	"progress.extract_overrides": "Withdrawing setting threads",
 	"progress.install_loader": "Setting up tweak loader",
 	"progress.add_profile": "Making starter setup",
 	"ui.loading-versions": "Loading wharves...",
