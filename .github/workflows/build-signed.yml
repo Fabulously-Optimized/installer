@@ -44,7 +44,7 @@ jobs:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: '903dc541-2740-462e-b9dd-659adaf2188e'
           project-slug: 'installer'
-          signing-policy-slug: 'test-signing'
+          signing-policy-slug: 'release-signing'
           github-artifact-id: '${{steps.upload-unsigned.outputs.artifact-id}}'
           wait-for-completion: true
           output-artifact-directory: 'signed-artifacts'
