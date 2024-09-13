@@ -1,4 +1,5 @@
 {
+	"name": "Français",
 	"progress.clean_old": "Nettoyage des anciens fichiers",
 	"progress.load_pack": "Téléchargement du modpack",
 	"progress.download_files": "Téléchargement des mods",
@@ -7,9 +8,9 @@
 	"progress.install_loader": "Installation du lanceur de mods",
 	"progress.add_profile": "Création de l'installation du launcheur",
 	"ui.loading-versions": "Chargement des versions...",
-	"ui.version-tooltip": "L'installeur Vanilla permet d'installer facilement toutes les versions supportées de Fabulously Optimized. Pour les versions obsolètes, utilisez un autre launcheur ou une autre méthode.",
+	"ui.version-tooltip": "L'installeur de Fabulously Optimized permet d'installer facilement toutes les versions supportées du modpack. Pour les versions obsolètes, utilisez un autre launcheur ou une autre méthode.",
 	"ui.isolate-profile": "Utiliser un dossier <code class=\"inline-code\">.minecraft</code> différent pour cette version ?",
-	"ui.profile-dir-placeholder": "Laisser vierge pour laisser l'installateur décider",
+	"ui.profile-dir-placeholder": "Laisser vide pour laisser l'installateur décider",
 	"ui.profile-dir-browse-label": "Parcourir les dossiers",
 	"ui.install-button": "Installer !",
 	"ui.installing": "Installation en cours...",
