@@ -1,4 +1,5 @@
 {
+	"name": "Русский",
 	"progress.clean_old": "Удаляем старые файлы",
 	"progress.load_pack": "Загружаем сборку",
 	"progress.download_files": "Скачиваем моды",
@@ -7,7 +8,7 @@
 	"progress.install_loader": "Устанавливаем загрузчик модов",
 	"progress.add_profile": "Создаём профиль в лаунчере",
 	"ui.loading-versions": "Загружаем версии...",
-	"ui.version-tooltip": "Vanilla Installer позволяет легко установить любую из поддерживаемых версий Fabulously Optimized. Для устаревших версий используйте другой лаунчер или метод установки.",
+	"ui.version-tooltip": "Fabulously Optimized Installer позволяет легко устанавливать все поддерживаемые версии Fabulously Optimized. Для устаревших версий используйте другую программу запуска или другой метод установки.",
 	"ui.isolate-profile": "Использовать другую папку <code class=\"inline-code\">.minecraft</code> для этой версии?",
 	"ui.profile-dir-placeholder": "Оставьте пустым если не уверены",
 	"ui.profile-dir-browse-label": "Просмотр папок",
