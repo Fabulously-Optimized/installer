@@ -32,12 +32,15 @@ func main() {
 		panic(err)
 	}
 
-	sanMatcher, err := verify.NewSANMatcher("", "", "^https://github.com/Fabulously-Optimized/fabulously-optimized/")
+	sanMatcher, err := verify.NewSANMatcher("", "^https://github.com/Fabulously-Optimized/fabulously-optimized/")
 	if err != nil {
 		panic(err)
 	}
-	certID, err := verify.NewCertificateIdentity(sanMatcher, certificate.Extensions{
-		Issuer:                              "https://token.actions.githubusercontent.com",
+	issuerMatcher, err := verify.NewIssuerMatcher("https://token.actions.githubusercontent.com", "")
+	if err != nil {
+		panic(err)
+	}
+	certID, err := verify.NewCertificateIdentity(sanMatcher, issuerMatcher, certificate.Extensions{
 		BuildTrigger:                        "release",
 		SourceRepositoryURI:                 "https://github.com/Fabulously-Optimized/fabulously-optimized",
 		RunnerEnvironment:                   "github-hosted",
