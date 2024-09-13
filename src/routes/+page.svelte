@@ -195,7 +195,7 @@
 	}
 
 	function openHelp() {
-		open('https://fabulously-optimized.gitbook.io/modpack/readme/version-support');
+		open('https://wiki.download.fo/version-support');
 	}
 
 	async function browseProfileDirectory() {
