@@ -1,6 +1,5 @@
-name: 'Build'
+name: 'Build Signed'
 on:
-  release:
   workflow_dispatch:
 
 jobs:
