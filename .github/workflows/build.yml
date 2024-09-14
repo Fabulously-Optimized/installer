@@ -37,7 +37,13 @@ jobs:
           cache-dependency-path: |
             verifier/go.sum
       - name: Deploy Rust to CI
+        if: matrix.platform != 'windows-2022'
         uses: dtolnay/rust-toolchain@stable
+      - name: Deploy Rust to CI (Windows)
+        if: matrix.platform == 'windows-2022'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable-gnu
       - name: Install dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-20.04'
         run: |
