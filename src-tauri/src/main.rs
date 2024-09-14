@@ -431,8 +431,20 @@ async fn install_mrpack_inner(
         .context("Couldn't read signature bundle!")?;
     let hash: [u8; 32] = sha2::Sha256::digest(&bytes).into();
     let hash = hex::encode(hash);
-    if !Command::new_sidecar("verifier")
-        .context("Couldn't verify signature!")?
+    #[cfg(not(target_os = "windows"))]
+    let command = Command::new_sidecar("verifier").context("Couldn't verify signature!")?;
+    #[cfg(target_os = "windows")]
+    let command = Command::new({
+        let sidecar_path = tempdir.path().join("verifier.exe");
+        tokio::fs::write(
+            &sidecar_path,
+            include_bytes!("../../verifier/dist/verifier-x86_64-pc-windows-msvc.exe"),
+        )
+        .await
+        .context("Couldn't extract verifier!")?;
+        sidecar_path.to_string_lossy().to_string()
+    });
+    if !command
         .args([&hash, bundle_path.to_string_lossy().as_ref()])
         .status()
         .context("Couldn't verify signature!")?
