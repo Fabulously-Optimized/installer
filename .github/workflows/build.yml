@@ -6,25 +6,7 @@ on:
   pull_request:
 
 jobs:
-  build-verifier:
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-      - name: Install Go
-        uses: actions/setup-go@v5
-      - name: Build Verifier
-        run: |
-          pushd verifier
-          ./build.sh
-          popd
-      - name: Upload the artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: verifier-builds
-          path: verifier/dist/*
   publish-tauri:
-    needs: build-verifier
     permissions:
       contents: write
     strategy:
@@ -39,11 +21,6 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.4
       - name: Checkout Repository
         uses: actions/checkout@v4
-      - name: Download Verifier
-        uses: actions/download-artifact@v4
-        with:
-          name: verifier-builds
-          path: verifier/dist/
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
@@ -53,6 +30,8 @@ jobs:
         with:
           node-version: 18
           cache: 'pnpm'
+      - name: Install Go
+        uses: actions/setup-go@v5
       - name: Deploy Rust to CI
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies (Ubuntu only)

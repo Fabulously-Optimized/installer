@@ -14,11 +14,12 @@ use anyhow::{anyhow, Context};
 use mrpack::PackDependency;
 use reqwest::{StatusCode, Url};
 use sha2::Digest;
-use tauri::{api::process::Command, Manager};
+use tauri::Manager;
 use tempfile::tempdir;
 use tokio::{fs::File, io::AsyncWriteExt};
 
 mod config;
+mod verifier;
 
 fn main() {
     tauri::Builder::default()
@@ -431,15 +432,8 @@ async fn install_mrpack_inner(
         .context("Couldn't read signature bundle!")?;
     let hash: [u8; 32] = sha2::Sha256::digest(&bytes).into();
     let hash = hex::encode(hash);
-    if !Command::new_sidecar("verifier")
-        .context("Couldn't verify signature!")?
-        .args([&hash, bundle_path.to_string_lossy().as_ref()])
-        .status()
-        .context("Couldn't verify signature!")?
-        .success()
-    {
-        return Err(anyhow!("Couldn't verify signature!"));
-    }
+    verifier::verify(&hash, bundle_path.to_string_lossy().as_ref())
+        .context("Failed to verify signature")?;
     _ = tempdir.close();
 
     let mut mrpack =

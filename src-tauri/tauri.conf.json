@@ -32,7 +32,6 @@
         "depends": []
       },
       "externalBin": [
-        "../verifier/dist/verifier"
       ],
       "icon": [
         "icons/32x32.png",
