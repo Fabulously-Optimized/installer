@@ -32,6 +32,10 @@ jobs:
           cache: 'pnpm'
       - name: Install Go
         uses: actions/setup-go@v5
+        with:
+          go-version: '^1.22.5'
+          cache-dependency-path: |
+            verifier/go.sum
       - name: Deploy Rust to CI
         uses: dtolnay/rust-toolchain@stable
       - name: Install dependencies (Ubuntu only)
