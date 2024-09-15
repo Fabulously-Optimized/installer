@@ -8,7 +8,7 @@
 	import { get_project, list_versions, type Version } from '$lib/modrinth';
 	import { trans, locale, langIds, langName, dir, getDir } from '$lib/i18n';
 	import { listen } from '@tauri-apps/api/event';
-	import { appWindow } from '@tauri-apps/api/window';
+	import { UserAttentionType, appWindow } from '@tauri-apps/api/window';
 	import { confirm } from '@tauri-apps/api/dialog';
 	import { open } from '@tauri-apps/api/shell';
 	import flexver_compare from '$lib/flexver';
@@ -132,6 +132,7 @@
 				cosign_bundle_url
 			);
 			state = 'postInstall';
+			await appWindow.requestUserAttention(UserAttentionType.Informational);
 		} catch (e) {
 			state = 'error';
 			errorMessage = String(e);
