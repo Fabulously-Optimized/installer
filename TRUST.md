@@ -1,4 +1,5 @@
 # Procedure Overview
+
 1. Frontend calls Modrinth API to retrieve information about current modpack versions
 1. User selects version and other install parameters
 1. Frontend sends modpack bundle URL alongside verification material to backend
@@ -10,6 +11,7 @@
 1. Backend creates launcher profile and writes install metadata to file
 
 # Trust & Security
+
 - Modpack bundle is built from [source](https://github.com/Fabulously-Optimized/fabulously-optimized) and signed by Github Actions using cosign
 - Source and modpack bundle includes hashes for all their required external files
 - Backend restricts download URLs for modpack manifest and external mods
