@@ -21,7 +21,7 @@
         "confirm": true
       },
       "shell": {
-        "open": "^https://fabulously-optimized.gitbook.io/modpack/readme/"
+        "open": "^https://wiki.download.fo/"
       }
     },
     "bundle": {
