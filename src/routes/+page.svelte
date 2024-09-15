@@ -205,8 +205,8 @@
 
 	let profileDirectory = '';
 
-	$: document.querySelector('html').lang = $locale;
-	$: document.querySelector('html').dir = $dir;
+	$: document.querySelector('html')!.lang = $locale;
+	$: document.querySelector('html')!.dir = $dir;
 </script>
 
 <div class="absolute top-0 start-0 m-4 fill-text flex flex-row">
