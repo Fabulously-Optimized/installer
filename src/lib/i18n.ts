@@ -18,6 +18,12 @@ export const trans = derived(
 		transInternal($locale, id, data)
 );
 
+export const dir = derived(locale, getDir);
+
+export function getDir(locale: string) {
+	return langs[locale][1] ? 'rtl' : 'ltr';
+}
+
 export const langIds: string[] = [];
 for (const key in langs) {
 	if (Object.prototype.hasOwnProperty.call(langs, key)) {
@@ -25,8 +31,8 @@ for (const key in langs) {
 	}
 }
 export function langName(locale: string) {
-	if (locale && langs[locale] && langs[locale]['name']) {
-		return langs[locale]['name'];
+	if (locale && langs[locale] && langs[locale][0]['name']) {
+		return langs[locale][0]['name'];
 	}
 	return locale;
 }
@@ -36,8 +42,8 @@ function transInternal(
 	id: string,
 	data?: Record<string, string | number | undefined>
 ) {
-	if (locale && langs[locale] && langs[locale][id]) {
-		let text = langs[locale][id];
+	if (locale && langs[locale] && langs[locale][0][id]) {
+		let text = langs[locale][0][id];
 		for (const key in data) {
 			if (Object.prototype.hasOwnProperty.call(data, key)) {
 				const element = data[key];
@@ -46,8 +52,8 @@ function transInternal(
 		}
 		return text;
 	}
-	if (langs[defaultLocale] && langs[defaultLocale][id]) {
-		let text = langs[defaultLocale][id];
+	if (langs[defaultLocale] && langs[defaultLocale][0][id]) {
+		let text = langs[defaultLocale][0][id];
 		for (const key in data) {
 			if (Object.prototype.hasOwnProperty.call(data, key)) {
 				const element = data[key];

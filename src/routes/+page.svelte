@@ -6,7 +6,7 @@
 		show_profile_dir_selector
 	} from '$lib/installer';
 	import { get_project, list_versions, type Version } from '$lib/modrinth';
-	import { trans, locale, langIds, langName } from '$lib/i18n';
+	import { trans, locale, langIds, langName, dir, getDir } from '$lib/i18n';
 	import { listen } from '@tauri-apps/api/event';
 	import { appWindow } from '@tauri-apps/api/window';
 	import { confirm } from '@tauri-apps/api/dialog';
@@ -204,6 +204,9 @@
 	}
 
 	let profileDirectory = '';
+
+	$: document.querySelector('html').lang = $locale;
+	$: document.querySelector('html').dir = $dir;
 </script>
 
 <div class="absolute top-0 start-0 m-4 fill-text flex flex-row">
@@ -214,12 +217,18 @@
 		<ListboxButton class="p-2 hover:bg-surface0 rounded">{@html TranslateIcon}</ListboxButton>
 		<div class="relative">
 			<ListboxOptions
-				class="absolute top-1 bg-surface0 rounded shadow-lg text-text flex flex-col max-h-[70vh] overflow-scroll"
+				class="absolute top-1 bg-surface0 rounded shadow-lg text-text flex flex-col max-h-[70vh] overflow-y-scroll"
 			>
 				{#each langIds as lang}
-					<ListboxOption value={lang} class="p-2 pe-6 hover:bg-surface1 rounded text-nowrap"
-						>{langName(lang)}</ListboxOption
+					<ListboxOption
+						value={lang}
+						class={({ active }) =>
+							active ? 'bg-surface1 p-2 rounded text-nowrap' : 'p-2 rounded text-nowrap'}
+						dir={getDir(lang)}
+						{lang}
 					>
+						{langName(lang)}
+					</ListboxOption>
 				{/each}
 			</ListboxOptions>
 		</div>
@@ -230,7 +239,7 @@
 	<div class="flex flex-col gap-4 max-w-md">
 		{#if state == 'preInstall'}
 			<div class="flex flex-row gap-2 items-center justify-center">
-				<select class="input-box" bind:value={selected} disabled={versions == undefined}>
+				<select class="input-box" bind:value={selected} disabled={versions == undefined} lang="en" dir="ltr">
 					{#if versions == undefined}
 						<option>{$trans('ui.loading-versions')}</option>
 					{:else}

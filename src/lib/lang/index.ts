@@ -17,23 +17,23 @@ import zh_cn from './zh-cn.json';
 import zh_tw from './zh-tw.json';
 import zh from './zh.json';
 
-export const langs: Record<string, Record<string, string>> = {
-	en,
-	et,
-	fr,
-	he,
-	it,
-	ko,
-	'ms-arab': ms_arab,
-	ms,
-	pl,
-	'pt-br': pt_br,
-	qep,
-	ro,
-	ru,
-	tr,
-	vi,
-	'zh-cn': zh_cn,
-	'zh-tw': zh_tw,
-	zh,
+export const langs: Record<string, [Record<string, string>, boolean]> = {
+	en: [en, false],
+	et: [et, false],
+	fr: [fr, false],
+	he: [he, true],
+	it: [it, false],
+	ko: [ko, false],
+	'ms-arab': [ms_arab, true],
+	ms: [ms, false],
+	pl: [pl, false],
+	'pt-br': [pt_br, false],
+	qep: [qep, false],
+	ro: [ro, false],
+	ru: [ru, false],
+	tr: [tr, false],
+	vi: [vi, false],
+	'zh-cn': [zh_cn, false],
+	'zh-tw': [zh_tw, false],
+	zh: [zh, false]
 };
