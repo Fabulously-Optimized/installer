@@ -24,5 +24,5 @@
 	"ui.no-launcher": "安裝程式無法偵測到官方 Minecraft 啟動器。請先安裝啟動器或再啟動一次以繼續操作。",
 	"ui.no-launcher-back": "返回",
 	"ui.no-launcher-continue": "繼續",
-	"ui.back-home": "返回到首頁"
+	"ui.back-home": "返回首頁"
 }

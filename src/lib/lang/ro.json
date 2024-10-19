@@ -8,7 +8,7 @@
 	"progress.install_loader": "Instalarea încărcătorului de moduri",
 	"progress.add_profile": "Crearea instalării lansatorului",
 	"ui.loading-versions": "Încărcarea versiunilor...",
-	"ui.version-tooltip": "Installer-ul vanilla permite instalarea uşoară a tuturor versiunilor acceptate de FO. Pentru versiuni învechite, utilizaţi un alt launcher sau o metodă de instalare.",
+	"ui.version-tooltip": "Fabulously Optimized Installer permite instalarea uşoară a tuturor versiunilor acceptate de FO. Pentru versiuni învechite, utilizaţi un alt launcher sau o metodă de instalare.",
 	"ui.isolate-profile": "Folosiți un folder <code class=\"inline-code\">.minecraft</code> diferit pentru această versiune?",
 	"ui.profile-dir-placeholder": "Lăsați gol pentru a lăsa installer-ul să decidă",
 	"ui.profile-dir-browse-label": "Răsfoiți dosare",
