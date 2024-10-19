@@ -16,7 +16,7 @@
 	"ui.installing": "Instalando...",
 	"ui.installed": "O Fabulously Optimized está instalado!",
 	"ui.install-error": "Houve um erro ao instalar o Fabulously Optimized: {{errorMessage}}",
-	"ui.downgrade-msg": "Você está tentando inferiorizar a versão do Minecraft. Isso <span class=\"inline font-semibold\">NÃO É COMPATÍVEL</span> pela Mojang ou pelo Fabulously Optimized e talvez possa causar erros. <br /> Se você quiser fazer com segurança, você deve fazer uma cópia dos arquivos de <code class=\"inline-code\">mods</code>,<code class=\"inline-code\">configs</code> e <code class=\"inline-code\">saves</code> para uma localização diferente e exclua-os do arquivo .minecraft.",
+	"ui.downgrade-msg": "Você está tentando inferiorizar a versão do Minecraft. Isso <span class=\"inline font-semibold\">NÃO É COMPATÍVEL</span> pela Mojang ou pelo Fabulously Optimized e talvez possa causar erros. <br /> Se você quiser fazer com segurança, você deve fazer uma cópia dos arquivos de <code class=\"inline-code\">mods</code>,<code class=\"inline-code\">config</code> e <code class=\"inline-code\">saves</code> para uma localização diferente e exclua-os do arquivo .minecraft.",
 	"ui.confirm-downgrade": "Sim, quero inferiorizar o FO.",
 	"ui.downgrade-cancel": "Voltar",
 	"ui.downgrade-continue": "Continuar",
