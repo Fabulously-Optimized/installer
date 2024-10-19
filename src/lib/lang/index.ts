@@ -8,6 +8,7 @@ import ms_arab from './ms-arab.json';
 import ms from './ms.json';
 import pl from './pl.json';
 import pt_br from './pt-br.json';
+import pt_pt from './pt-pt.json';
 import qep from './qep.json';
 import ro from './ro.json';
 import ru from './ru.json';
@@ -28,6 +29,7 @@ export const langs: Record<string, [Record<string, string>, boolean]> = {
 	ms: [ms, false],
 	pl: [pl, false],
 	'pt-br': [pt_br, false],
+	'pt-pt': [pt_pt, false],
 	qep: [qep, false],
 	ro: [ro, false],
 	ru: [ru, false],
