@@ -44,6 +44,9 @@ jobs:
         with:
           name: verifier-builds
           path: verifier/dist/
+      - name: Apply +x to verifier
+        if: matrix.platform != 'windows-2022'
+        run: chmod +x verifier/dist/*
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
