@@ -1,16 +1,19 @@
 import { writable, derived } from 'svelte/store';
 import { langs } from './lang';
 
+const defaultLocale = 'en';
+
 function determineLocale(locale: string): string {
 	if (langs[locale.toLowerCase()] != undefined) {
 		return locale.toLowerCase();
-	} else {
+	} else if (langs[locale.toLowerCase().split('-')[0]] != undefined) {
 		return locale.toLowerCase().split('-')[0];
+	} else {
+		return defaultLocale;
 	}
 }
 
 export const locale = writable(determineLocale(navigator.language));
-const defaultLocale = 'en';
 
 export const trans = derived(
 	locale,
