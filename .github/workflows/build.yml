@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Install Go
         uses: actions/setup-go@v5
         with:
@@ -33,7 +35,7 @@ jobs:
       fail-fast: false
       matrix:
         # maybe update to macOS 14 if this is ARM64-ready?
-        platform: [macos-13, ubuntu-20.04, windows-2022]
+        platform: [macos-13, ubuntu-20.04, windows-2025]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -41,13 +43,15 @@ jobs:
         uses: mozilla-actions/sccache-action@v0.0.4
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Download Verifier
         uses: actions/download-artifact@v4
         with:
           name: verifier-builds
           path: verifier/dist/
       - name: Apply +x to verifier
-        if: matrix.platform != 'windows-2022'
+        if: matrix.platform != 'windows-2025'
         run: chmod +x verifier/dist/*
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -93,7 +97,7 @@ jobs:
           path: src-tauri/target/release/bundle/dmg/*.dmg
       - name: Upload the Windows packages
         uses: actions/upload-artifact@v4
-        if: matrix.platform == 'windows-2022'
+        if: matrix.platform == 'windows-2025'
         with:
           name: windows-packages
           path: src-tauri/target/release/*.exe
@@ -123,7 +127,7 @@ jobs:
           path: src-tauri/target/debug/bundle/dmg/*.dmg
       - name: Upload the Windows packages
         uses: actions/upload-artifact@v4
-        if: matrix.platform == 'windows-2022'
+        if: matrix.platform == 'windows-2025'
         with:
           name: windows-packages-debug
           path: src-tauri/target/debug/*.exe
