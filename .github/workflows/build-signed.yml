@@ -6,10 +6,12 @@ jobs:
   build-signed:
     permissions:
       contents: write
-    runs-on: windows-2022
+    runs-on: windows-2025
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - name: Install Go
         uses: actions/setup-go@v5
       - name: Setup pnpm
