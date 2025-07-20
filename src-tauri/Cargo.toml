@@ -1,6 +1,6 @@
 [package]
 name = "paigaldaja"
-version = "1.0.1"
+version = "1.0.2"
 description = "A whitelabel .mrpack installer"
 authors = ["Skye"]
 license = "MIT"
