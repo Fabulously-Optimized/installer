@@ -9,17 +9,17 @@ jobs:
     runs-on: windows-2025
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           persist-credentials: false
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
       - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4
         with:
           version: latest
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 18
       - name: Deploy Rust to CI
@@ -40,7 +40,7 @@ jobs:
           name: windows-packages-unsigned
           path: src-tauri/target/release/Fabulously Optimized Installer.exe
       - name: Submit Signing Request
-        uses: signpath/github-action-submit-signing-request@v0.4
+        uses: signpath/github-action-submit-signing-request@v1.3
         with:
           api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
           organization-id: '903dc541-2740-462e-b9dd-659adaf2188e'
