@@ -145,18 +145,29 @@
 	let versions: Version[] | undefined = undefined;
 	let selected: string;
 	let isolateProfile = false;
-	list_versions(PROJECT_ID).then((result) => {
-		const featured_versions = result
-			.filter((e) => e.featured)
-			.filter((e) => e.files.find((e) => e.filename == 'cosign-bundle.zip'));
-		const release_versions = featured_versions.filter((e) => e.version_type == 'release');
-		versions = featured_versions;
-		if (release_versions.length > 0) {
-			selected = release_versions[0].id;
-		} else {
-			selected = featured_versions[0].id;
-		}
-	});
+	let result = list_versions(PROJECT_ID).await;
+	
+	versions = result
+	    .into_iter()
+	    .filter(|v| {
+	        let title = v.title.as_str();
+	
+	        title.contains('▫')
+	            || (
+	                !title.contains('⚠')
+	                && !title.contains('▪')
+	                && v.files.iter().any(|f| f.filename == "cosign-bundle.zip")
+	            )
+	    })
+	    .collect();
+	
+	selected = versions
+	    .iter()
+	    .find(|v| v.version_type == "release")
+	    .or_else(|| versions.first())
+	    .map(|v| v.id.clone())
+	    .unwrap();
+
 	let state:
 		| 'preInstall'
 		| 'installing'
