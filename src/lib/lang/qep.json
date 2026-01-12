@@ -16,7 +16,7 @@
 	"ui.installing": "Stelling...",
 	"ui.installed": "Fabulously Optimized is stelled!",
 	"ui.install-error": "A dwale befallen while stelling Fabulously Optimized: {{errorMessage}}",
-	"ui.downgrade-msg": "You are fanding to worsen the Minecraft wharve. This is <span class=\"inline font-semibold\">NOT UPHELD</span> by Mojang or Fabulously Optimized and it may make world fenowedness or downfall. <br /> If you wish to do this soundly, you should backup <code class=\"inline-code\">mods</code>, <code class=\"inline-code\">config</code> and <code class=\"inline-code\">saves</code> folders to a sunder stowledge and adwash hem from your .minecraft folder.",
+	"ui.downgrade-msg": "You are fanding to worsen the Minecraft wharve. This is <span class=\"inline font-semibold\">NOT UPHELD</span> by Mojang or Fabulously Optimized and it may make world fenowedness or crash. <br /> If you wish to do this soundly, you should backup <code class=\"inline-code\">mods</code>, <code class=\"inline-code\">config</code> and <code class=\"inline-code\">saves</code> folders to a sunder stowledge and adwash hem from your .minecraft folder.",
 	"ui.confirm-downgrade": "Yes, I wish to worsen FO.",
 	"ui.downgrade-cancel": "Back",
 	"ui.downgrade-continue": "Go on",
