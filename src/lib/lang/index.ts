@@ -1,6 +1,7 @@
 import be from './be.json';
 import en from './en.json';
 import es_es from './es-es.json';
+import es_ve from './es-ve.json';
 import et from './et.json';
 import fr from './fr.json';
 import he from './he.json';
@@ -18,6 +19,7 @@ import tr from './tr.json';
 import uk from './uk.json';
 import vi from './vi.json';
 import zh_cn from './zh-cn.json';
+import zh_hk from './zh-hk.json';
 import zh_tw from './zh-tw.json';
 import zh from './zh.json';
 
@@ -25,6 +27,7 @@ export const langs: Record<string, [Record<string, string>, boolean]> = {
 	be: [be, false],
 	en: [en, false],
 	'es-es': [es_es, false],
+	'es-ve': [es_ve, false],
 	et: [et, false],
 	fr: [fr, false],
 	he: [he, true],
@@ -42,6 +45,7 @@ export const langs: Record<string, [Record<string, string>, boolean]> = {
 	uk: [uk, false],
 	vi: [vi, false],
 	'zh-cn': [zh_cn, false],
+	'zh-hk': [zh_hk, false],
 	'zh-tw': [zh_tw, false],
 	zh: [zh, false]
 };
