@@ -152,13 +152,8 @@
 		const featured_versions: Version[] = [];
 		const latest: Record<string, Version> = {};
 		for (const version of signed_versions) {
-			if (version.name.includes('▪️') || version.name.includes('⚠️')) {
-				continue;
-			}
 			if (version.name.includes('▫️')) {
-				console.log(version);
 				featured_versions.push(version);
-				continue;
 			}
 			for (const game_version of version.game_versions) {
 				if (
@@ -172,10 +167,14 @@
 		for (const key in latest) {
 			if (!Object.hasOwn(latest, key)) continue;
 
-			const element = latest[key];
+			const version = latest[key];
 
-			if (!featured_versions.includes(element)) {
-				featured_versions.push(element);
+			if (version.name.includes('▪️') || version.name.includes('⚠️')) {
+				continue;
+			}
+
+			if (!featured_versions.includes(version)) {
+				featured_versions.push(version);
 			}
 		}
 
