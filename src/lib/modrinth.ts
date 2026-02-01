@@ -22,6 +22,7 @@ export interface VersionFile {
 
 export async function get_project(id: string): Promise<Project> {
 	const resp = await fetch(`https://api.modrinth.com/v2/project/${id}`, {
+		cache: "no-store",
 		headers: {
 			'User-Agent': `Paigaldaja/${await getVersion()} (+https://github.com/Fabulously-Optimized/vanilla-installer-rust)`
 		}
