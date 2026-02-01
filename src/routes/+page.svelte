@@ -146,9 +146,40 @@
 	let selected: string;
 	let isolateProfile = false;
 	list_versions(PROJECT_ID).then((result) => {
-		const featured_versions = result
-			.filter((e) => e.featured)
-			.filter((e) => e.files.find((e) => e.filename == 'cosign-bundle.zip'));
+		const signed_versions = result.filter((e) =>
+			e.files.find((e) => e.filename == 'cosign-bundle.zip')
+		);
+		const featured_versions: Version[] = [];
+		const latest: Record<string, Version> = {};
+		for (const version of signed_versions) {
+			if (version.name.includes('▪️') || version.name.includes('⚠️')) {
+				continue;
+			}
+			if (version.name.includes('▫️')) {
+				console.log(version);
+				featured_versions.push(version);
+				continue;
+			}
+			for (const game_version of version.game_versions) {
+				if (
+					latest[game_version] == undefined ||
+					flexver_compare(latest[game_version].version_number, version.version_number) < 0
+				) {
+					latest[game_version] = version;
+				}
+			}
+		}
+		for (const key in latest) {
+			if (!Object.hasOwn(latest, key)) continue;
+
+			const element = latest[key];
+
+			if (!featured_versions.includes(element)) {
+				featured_versions.push(element);
+			}
+		}
+
+		featured_versions.sort((a, b) => -flexver_compare(a.version_number, b.version_number));
 		const release_versions = featured_versions.filter((e) => e.version_type == 'release');
 		versions = featured_versions;
 		if (release_versions.length > 0) {
