@@ -36,8 +36,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Note: macOS 26 image does not support x86-64, Bump if we are ARM64-ready.
-        platform: [macos-15-intel, ubuntu-22.04, windows-2025]
+        # Note: macOS 26 image is the last version to have x86_64 image, later versions are ARM64-only.
+        platform: [macos-26-intel, ubuntu-22.04, windows-2025]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -95,7 +95,7 @@ jobs:
           path: src-tauri/target/release/fabulously-optimized-installer
       - name: Upload the macOS packages
         uses: actions/upload-artifact@v4
-        if: matrix.platform == 'macos-15-intel'
+        if: matrix.platform == 'macos-26-intel'
         with:
           name: macos-packages
           path: src-tauri/target/release/bundle/dmg/*.dmg
@@ -125,7 +125,7 @@ jobs:
           path: src-tauri/target/debug/fabulously-optimized-installer
       - name: Upload the macOS packages (debug)
         uses: actions/upload-artifact@v4
-        if: matrix.platform == 'macos-15-intel'
+        if: matrix.platform == 'macos-26-intel'
         with:
           name: macos-packages-debug
           path: src-tauri/target/debug/bundle/dmg/*.dmg
