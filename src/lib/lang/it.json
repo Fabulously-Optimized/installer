@@ -19,7 +19,7 @@
 	"ui.downgrade-msg": "Si sta tentando di eseguire un downgrade della versione di Minecraft. Questa operazione <span class=\"inline font-semibold\">NON È SUPPORTATA</span> da ne Mojang ne da Fabulously Optimized e potrebbe causare corruzione del mondo o crash. <br /> Se si desidera eseguire questa operazione in modo sicuro, è necessario eseguire il backup delle cartelle <code class=\"inline-code\">mods</code>, <code class=\"inline-code\">config</code> e <code class=\"inline-code\">saves</code> in un altro percorso ed eliminarle dalla cartella .minecraft.",
 	"ui.confirm-downgrade": "Sì, voglio downgradare FO.",
 	"ui.downgrade-cancel": "Indietro",
-	"ui.downgrade-continue": "Continuare",
+	"ui.downgrade-continue": "Continua",
 	"ui.confirm-exit": "Fabulously Optimized si sta installando. Siete sicuri di voler uscire?",
 	"ui.no-launcher": "L'installer non è riuscito a rilevare il launcher ufficiale di Minecraft. Installate il launcher e avviatelo una volta per procedere.",
 	"ui.no-launcher-back": "Indietro",
